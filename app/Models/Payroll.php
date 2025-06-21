@@ -15,7 +15,17 @@ class Payroll extends Model
         'base_salary',
         'overtime_payment',
         'total_salary',
-        'payroll_date'
+        'payroll_date',
+        'payment_status',
+        'payment_method',
+        'payment_reference',
+        'payment_date',
+        'notes'
+    ];
+
+    protected $casts = [
+        'payroll_date' => 'date',
+        'payment_date' => 'datetime',
     ];
 
     public function linmas()

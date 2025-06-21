@@ -1,8 +1,21 @@
 <x-app-layout>
     <div class="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <h1 class="text-4xl font-bold mb-6 text-gray-800">Data Kehadiran</h1>
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4 md:mb-0">Data Kehadiran</h1>
+            <div class="flex space-x-2">
+                <a href="{{ route('templates.attendance') }}"
+                    class="bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition duration-300 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download Template
+                </a>
+            </div>
+        </div>
 
-        <div class="flex flex-col sm:flex-row justify-between mb-6 space-y-4 sm:space-y-0 sm:space-x-4">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <form action="{{ route('attendances.import') }}" method="POST" enctype="multipart/form-data"
                 class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
                 @csrf
@@ -46,7 +59,7 @@
             @endif
 
             <div class="overflow-x-auto bg-white rounded-lg shadow-md">
-                <table class="min-w-full bg-white">
+                <table class="min-w-full bg-white" id="attendanceTable">
                     <thead>
                         <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
                             <th class="py-3 px-6 text-left">No</th>
@@ -56,7 +69,6 @@
                             <th class="py-3 px-6 text-left">Status</th>
                             <th class="py-3 px-6 text-left">Status Baru</th>
                             <th class="py-3 px-6 text-left">Pengecualian</th>
-                            <th class="py-3 px-6 text-left">Operasi</th>
                             <th class="py-3 px-6 text-center">Aksi</th>
                         </tr>
                     </thead>
@@ -67,10 +79,20 @@
                                 <td class="py-3 px-6 text-left">{{ $attendance->linmas->nama ?? 'N/A' }}</td>
                                 <td class="py-3 px-6 text-left">{{ $attendance->linmas->nik ?? 'N/A' }}</td>
                                 <td class="py-3 px-6 text-left">{{ $attendance->waktu }}</td>
-                                <td class="py-3 px-6 text-left">{{ $attendance->status }}</td>
-                                <td class="py-3 px-6 text-left">{{ $attendance->status_baru }}</td>
+                                <td class="py-3 px-6 text-left">
+                                    <span
+                                        class="px-2 py-1 rounded-full text-xs {{ $attendance->status == 'C/Masuk' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800' }}">
+                                        {{ $attendance->status }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-6 text-left">
+                                    @if ($attendance->status_baru)
+                                        <span class="px-2 py-1 rounded-full text-xs bg-blue-200 text-blue-800">
+                                            {{ $attendance->status_baru }}
+                                        </span>
+                                    @endif
+                                </td>
                                 <td class="py-3 px-6 text-left">{{ $attendance->pengecualian }}</td>
-                                <td class="py-3 px-6 text-left">{{ $attendance->operasi }}</td>
                                 <td class="py-3 px-6 text-center">
                                     <form action="{{ route('attendances.destroy', $attendance->id) }}" method="POST"
                                         onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">
@@ -103,5 +125,16 @@
             const fileName = input.files[0]?.name || 'Pilih file Excel';
             document.getElementById('file-name').textContent = fileName;
         }
+
+        $(document).ready(function() {
+            $('#attendanceTable').DataTable({
+                responsive: true,
+                "paging": false,
+                "info": false,
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json"
+                }
+            });
+        });
     </script>
 </x-app-layout>

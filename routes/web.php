@@ -5,10 +5,14 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LinmasController;
 use App\Http\Controllers\PayRateController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PayrollHistoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SalaryController;
+use App\Http\Controllers\SalaryRateController;
+use App\Http\Controllers\AllowanceDeductionController;
+use App\Http\Controllers\MonthClosingController;
+use App\Http\Controllers\TemplateController;
 use Illuminate\Support\Facades\Route;
-use Maatwebsite\Excel\Row;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,10 +35,16 @@ Route::get('/', function () {
 
 require __DIR__ . '/auth.php';
 Route::middleware('auth')->group(function () {
+    // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Template Routes
+    Route::get('/templates/linmas', [TemplateController::class, 'downloadLinmasTemplate'])->name('templates.linmas');
+    Route::get('/templates/attendance', [TemplateController::class, 'downloadAttendanceTemplate'])->name('templates.attendance');
+
+    // Linmas Routes
     Route::get('linmas', [LinmasController::class, 'index'])->name('linmas.index');
     Route::get('linmas/create', [LinmasController::class, 'create'])->name('linmas.create');
     Route::post('linmas', [LinmasController::class, 'store'])->name('linmas.store');
@@ -42,32 +52,54 @@ Route::middleware('auth')->group(function () {
     Route::get('linmas/{linmas}/edit', [LinmasController::class, 'edit'])->name('linmas.edit');
     Route::put('linmas/{linmas}', [LinmasController::class, 'update'])->name('linmas.update');
     Route::delete('linmas/{linmas}', [LinmasController::class, 'destroy'])->name('linmas.destroy');
-
-
-
     Route::post('/linmas/import', [LinmasController::class, 'import'])->name('linmas.import');
-    // Route::post('/attendance/import', [AttendancesController::class, 'importAttendance'])->name('attendance.import');
-    // Route::get('/attendance', [AttendancesController::class, 'index'])->name('attendance.index');
 
-    // Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
-
-    // Route::get('/salary', [SalaryController::class, 'index'])->name('salary.index');
-    // Route::resource('linmas', LinmasController::class);
-    // Route::post('linmas/import', [LinmasController::class, 'import'])->name('linmas.import');
-
-    // Route Attendance
+    // Attendance Routes
     Route::get('/attendances', [AttendancesController::class, 'index'])->name('attendances.index');
     Route::post('/attendances/import', [AttendancesController::class, 'importAttendance'])->name('attendances.import');
     Route::delete('/attendances/{id}', [AttendancesController::class, 'destroy'])->name('attendances.destroy');
 
-    // Route Payroll
+    // Payroll Routes
     Route::get('payroll', [PayrollController::class, 'index'])->name('payroll.index');
     Route::post('payroll/calculate', [PayrollController::class, 'calculatePayroll'])->name('payroll.calculate');
     Route::post('payroll/export-pdf', [PayrollController::class, 'exportPdf'])->name('payroll.exportPdf');
     Route::post('payroll/export-slip/{nik}', [PayrollController::class, 'exportSlip'])->name('payroll.exportSlip');
     Route::post('/payroll/store', [PayrollController::class, 'storePayroll'])->name('payroll.store');
 
+    // Payroll History Routes
+    Route::get('payroll/history', [PayrollHistoryController::class, 'index'])->name('payroll.history');
+    Route::put('payroll/history/{payroll}/status', [PayrollHistoryController::class, 'updateStatus'])->name('payroll.update-status');
+    Route::post('payroll/monthly-report', [PayrollHistoryController::class, 'monthlyReport'])->name('payroll.monthly-report');
+
+    // Month Closing Routes
+    Route::get('month-closing', [MonthClosingController::class, 'index'])->name('month-closing.index');
+    Route::get('month-closing/create', [MonthClosingController::class, 'create'])->name('month-closing.create');
+    Route::post('month-closing', [MonthClosingController::class, 'store'])->name('month-closing.store');
+    Route::get('month-closing/{monthClosing}', [MonthClosingController::class, 'show'])->name('month-closing.show');
+    Route::put('month-closing/{monthClosing}/reopen', [MonthClosingController::class, 'reopen'])->name('month-closing.reopen');
+    Route::get('month-closing/{monthClosing}/report', [MonthClosingController::class, 'generateReport'])->name('month-closing.generate-report');
+
+    // Settings Routes
+    // Salary Rates
+    Route::get('settings/rates', [SalaryRateController::class, 'index'])->name('settings.rates.index');
+    Route::get('settings/rates/create', [SalaryRateController::class, 'create'])->name('settings.rates.create');
+    Route::post('settings/rates', [SalaryRateController::class, 'store'])->name('settings.rates.store');
+    Route::get('settings/rates/{rate}/edit', [SalaryRateController::class, 'edit'])->name('settings.rates.edit');
+    Route::put('settings/rates/{rate}', [SalaryRateController::class, 'update'])->name('settings.rates.update');
+    Route::delete('settings/rates/{rate}', [SalaryRateController::class, 'destroy'])->name('settings.rates.destroy');
+
+    // Allowances & Deductions
+    Route::get('settings/allowances-deductions', [AllowanceDeductionController::class, 'index'])->name('settings.allowances-deductions.index');
+    Route::get('settings/allowances-deductions/create', [AllowanceDeductionController::class, 'create'])->name('settings.allowances-deductions.create');
+    Route::post('settings/allowances-deductions', [AllowanceDeductionController::class, 'store'])->name('settings.allowances-deductions.store');
+    Route::get('settings/allowances-deductions/{allowanceDeduction}/edit', [AllowanceDeductionController::class, 'edit'])->name('settings.allowances-deductions.edit');
+    Route::put('settings/allowances-deductions/{allowanceDeduction}', [AllowanceDeductionController::class, 'update'])->name('settings.allowances-deductions.update');
+    Route::delete('settings/allowances-deductions/{allowanceDeduction}', [AllowanceDeductionController::class, 'destroy'])->name('settings.allowances-deductions.destroy');
+
+    // Linmas Allowances & Deductions Assignments
+    Route::get('settings/allowances-deductions/linmas-assignments', [AllowanceDeductionController::class, 'linmasAssignments'])->name('settings.allowances-deductions.linmas-assignments');
+    Route::get('settings/allowances-deductions/linmas/{linmas}/assign', [AllowanceDeductionController::class, 'showAssignForm'])->name('settings.allowances-deductions.assign');
+    Route::post('settings/allowances-deductions/linmas/{linmas}/assign', [AllowanceDeductionController::class, 'saveAssignments'])->name('settings.allowances-deductions.save-assignments');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
- 
