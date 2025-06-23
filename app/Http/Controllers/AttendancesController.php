@@ -14,7 +14,7 @@ class AttendancesController extends Controller
 {
     public function index()
     {
-        $attendances = attendances::with('linmas')->latest()->paginate(15);
+        $attendances = Attendances::with('linmas')->latest()->paginate(15);
         return view('attendance.index', compact('attendances'));
     }
 
@@ -27,25 +27,34 @@ class AttendancesController extends Controller
         DB::beginTransaction();
 
         try {
-            Excel::import(new AttendancesImport, $request->file('file'));
+            $import = new AttendancesImport();
+            Excel::import($import, $request->file('file'));
+
+            // Cek jika ada error pada import
+            $errors = $import->getErrors();
+            if (!empty($errors)) {
+                DB::rollBack();
+                return redirect()->back()->with('error', 'Terjadi kesalahan saat import: ' . implode(', ', $errors));
+            }
+
             DB::commit();
             return redirect()->route('attendances.index')->with('success', 'Data kehadiran berhasil diimpor');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Attendance import failed: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Gagal mengimpor data kehadiran. Silakan coba lagi.');
+            return redirect()->back()->with('error', 'Gagal mengimpor data kehadiran: ' . $e->getMessage());
         }
     }
 
     public function destroy($id)
     {
         try {
-            $attendance = attendances::findOrFail($id);
+            $attendance = Attendances::findOrFail($id);
             $attendance->delete();
             return redirect()->route('attendances.index')->with('success', 'Data kehadiran berhasil dihapus');
         } catch (\Exception $e) {
             Log::error('Attendance deletion failed: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Gagal menghapus data kehadiran. Silakan coba lagi.');
+            return redirect()->back()->with('error', 'Gagal menghapus data kehadiran: ' . $e->getMessage());
         }
     }
 }

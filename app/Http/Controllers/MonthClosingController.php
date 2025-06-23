@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class MonthClosingController extends Controller
 {
@@ -54,6 +55,7 @@ class MonthClosingController extends Controller
         $request->validate([
             'period' => 'required|string',
             'notes' => 'nullable|string',
+            'ignore_pending' => 'nullable|boolean',
         ]);
 
         // Parse period into year and month
@@ -81,6 +83,22 @@ class MonthClosingController extends Controller
                     ->with('error', 'Tidak ada data penggajian untuk periode ini.');
             }
 
+            // Check if there are any pending payments
+            $pendingPayrolls = $payrolls->where('payment_status', 'pending');
+            if ($pendingPayrolls->isNotEmpty() && !$request->has('ignore_pending')) {
+                $pendingCount = $pendingPayrolls->count();
+                $totalCount = $payrolls->count();
+
+                return redirect()->route('month-closing.create')
+                    ->with('error', "Masih terdapat $pendingCount dari $totalCount gaji dengan status pending. Mohon selesaikan pembayaran terlebih dahulu atau centang 'Abaikan status pending' untuk melanjutkan.")
+                    ->withInput();
+            }
+
+            // Check if there are any cancelled payments and summarize them
+            $cancelledPayrolls = $payrolls->where('payment_status', 'cancelled');
+            $cancelledAmount = $cancelledPayrolls->sum('total_salary');
+            $cancelledCount = $cancelledPayrolls->count();
+
             // Create month closing record
             $closing = MonthClosing::create([
                 'period' => $period->format('Y-m-d'),
@@ -91,7 +109,9 @@ class MonthClosingController extends Controller
                 'total_payrolls' => $payrolls->count(),
                 'total_amount' => $payrolls->sum('total_salary'),
                 'closed_by' => Auth::id(),
-                'notes' => $request->notes,
+                'notes' => $request->notes . ($cancelledCount > 0 ?
+                    " (Terdapat $cancelledCount pembayaran dibatalkan senilai Rp " . number_format($cancelledAmount, 0, ',', '.') . ")" :
+                    ""),
                 'status' => 'closed'
             ]);
 
@@ -103,10 +123,15 @@ class MonthClosingController extends Controller
 
             DB::commit();
 
+            // Create a mutex lock file (untuk mencegah race condition)
+            $lockFile = storage_path("app/month_closing_{$year}_{$month}.lock");
+            file_put_contents($lockFile, Carbon::now()->toDateTimeString());
+
             return redirect()->route('month-closing.index')
                 ->with('success', 'Periode ' . $period->format('F Y') . ' berhasil ditutup.');
         } catch (\Exception $e) {
             DB::rollback();
+            Log::error('Month closing failed: ' . $e->getMessage());
             return redirect()->route('month-closing.create')
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
@@ -121,7 +146,14 @@ class MonthClosingController extends Controller
             ->where('month_closing_id', $monthClosing->id)
             ->get();
 
-        return view('month-closing.show', compact('monthClosing', 'payrolls'));
+        // Hitung summary berdasarkan status
+        $summary = [
+            'paid' => $payrolls->where('payment_status', 'paid')->sum('total_salary'),
+            'pending' => $payrolls->where('payment_status', 'pending')->sum('total_salary'),
+            'cancelled' => $payrolls->where('payment_status', 'cancelled')->sum('total_salary'),
+        ];
+
+        return view('month-closing.show', compact('monthClosing', 'payrolls', 'summary'));
     }
 
     /**
@@ -133,6 +165,17 @@ class MonthClosingController extends Controller
         if ($monthClosing->status !== 'closed') {
             return redirect()->route('month-closing.index')
                 ->with('error', 'Periode ini tidak dapat dibuka kembali.');
+        }
+
+        // Check if it's the latest closed month (tidak boleh membuka bulan yang bukan terakhir)
+        $latestClosing = MonthClosing::where('status', 'closed')
+            ->orderBy('year', 'desc')
+            ->orderBy('month', 'desc')
+            ->first();
+
+        if ($latestClosing->id !== $monthClosing->id) {
+            return redirect()->route('month-closing.index')
+                ->with('error', 'Hanya periode terakhir yang ditutup yang dapat dibuka kembali.');
         }
 
         DB::beginTransaction();
@@ -148,10 +191,17 @@ class MonthClosingController extends Controller
 
             DB::commit();
 
+            // Remove lock file if exists
+            $lockFile = storage_path("app/month_closing_{$monthClosing->year}_{$monthClosing->month}.lock");
+            if (file_exists($lockFile)) {
+                unlink($lockFile);
+            }
+
             return redirect()->route('month-closing.index')
                 ->with('success', 'Periode ' . $monthClosing->formatted_period . ' berhasil dibuka kembali.');
         } catch (\Exception $e) {
             DB::rollback();
+            Log::error('Month reopening failed: ' . $e->getMessage());
             return redirect()->route('month-closing.index')
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }

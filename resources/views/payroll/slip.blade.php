@@ -229,7 +229,7 @@
             <table class="salary-table">
                 <thead>
                     <tr>
-                        <th width="60%">Keterangan</th>
+                        <th width="60%">Pendapatan</th>
                         <th width="40%" class="amount">Jumlah</th>
                     </tr>
                 </thead>
@@ -237,24 +237,45 @@
                     <tr>
                         <td>Gaji Pokok ({{ $payrollData['total_days_worked'] }} hari kerja @ Rp 75.114)</td>
                         <td class="amount">Rp
-                            {{ number_format($payrollData['total_days_worked'] * 75114, 0, ',', '.') }}</td>
+                            {{ number_format($payrollData['base_salary'], 0, ',', '.') }}</td>
                     </tr>
-                    <tr>
-                        <td>Tunjangan Transportasi</td>
-                        <td class="amount">Rp 0</td>
-                    </tr>
-                    <tr>
-                        <td>Tunjangan Makan</td>
-                        <td class="amount">Rp 0</td>
-                    </tr>
+
+                    <!-- Tampilkan tunjangan jika ada -->
+                    @if (isset($payrollData['allowances']) && count($payrollData['allowances']) > 0)
+                        @foreach ($payrollData['allowances'] as $allowance)
+                            <tr>
+                                <td>{{ $allowance['name'] }}</td>
+                                <td class="amount">Rp {{ number_format($allowance['amount'], 0, ',', '.') }}</td>
+                            </tr>
+                        @endforeach
+                    @else
+                        <tr>
+                            <td>Tunjangan Transportasi</td>
+                            <td class="amount">Rp 0</td>
+                        </tr>
+                        <tr>
+                            <td>Tunjangan Makan</td>
+                            <td class="amount">Rp 0</td>
+                        </tr>
+                    @endif
+
                     <tr>
                         <td>Lembur ({{ $payrollData['total_overtime'] }} jam @ Rp 10.000)</td>
-                        <td class="amount">Rp {{ number_format($payrollData['total_overtime'] * 10000, 0, ',', '.') }}
+                        <td class="amount">Rp {{ number_format($payrollData['overtime_payment'], 0, ',', '.') }}
                         </td>
                     </tr>
+
+                    <!-- Total pendapatan kotor -->
                     <tr class="total-row">
-                        <td>Total Gaji Kotor</td>
-                        <td class="amount">Rp {{ number_format($payrollData['total_wage'], 0, ',', '.') }}</td>
+                        <td>Total Pendapatan Kotor</td>
+                        <td class="amount">Rp
+                            {{ number_format(
+                                $payrollData['base_salary'] + $payrollData['overtime_payment'] + ($payrollData['total_allowances'] ?? 0),
+                                0,
+                                ',',
+                                '.',
+                            ) }}
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -267,21 +288,33 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>Pajak Penghasilan (PPh 21)</td>
-                        <td class="amount">Rp 0</td>
-                    </tr>
-                    <tr>
-                        <td>BPJS Kesehatan</td>
-                        <td class="amount">Rp 0</td>
-                    </tr>
-                    <tr>
-                        <td>BPJS Ketenagakerjaan</td>
-                        <td class="amount">Rp 0</td>
-                    </tr>
+                    <!-- Tampilkan potongan jika ada -->
+                    @if (isset($payrollData['deductions']) && count($payrollData['deductions']) > 0)
+                        @foreach ($payrollData['deductions'] as $deduction)
+                            <tr>
+                                <td>{{ $deduction['name'] }}</td>
+                                <td class="amount">Rp {{ number_format($deduction['amount'], 0, ',', '.') }}</td>
+                            </tr>
+                        @endforeach
+                    @else
+                        <tr>
+                            <td>Pajak Penghasilan (PPh 21)</td>
+                            <td class="amount">Rp 0</td>
+                        </tr>
+                        <tr>
+                            <td>BPJS Kesehatan</td>
+                            <td class="amount">Rp 0</td>
+                        </tr>
+                        <tr>
+                            <td>BPJS Ketenagakerjaan</td>
+                            <td class="amount">Rp 0</td>
+                        </tr>
+                    @endif
+
                     <tr class="total-row">
                         <td>Total Potongan</td>
-                        <td class="amount">Rp 0</td>
+                        <td class="amount">Rp {{ number_format($payrollData['total_deductions'] ?? 0, 0, ',', '.') }}
+                        </td>
                     </tr>
                 </tbody>
             </table>

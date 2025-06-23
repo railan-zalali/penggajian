@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class linmas extends Model
+class Linmas extends Model
 {
     use HasFactory;
     protected $fillable = [
@@ -17,4 +17,14 @@ class linmas extends Model
         'pendidikan',
         'pekerjaan'
     ];
+    public function attendances()
+    {
+        return $this->hasMany(Attendances::class, 'linmas_id');
+    }
+
+    // Tambahkan relasi ke Payroll
+    public function payrolls()
+    {
+        return $this->hasMany(Payroll::class);
+    }
 }

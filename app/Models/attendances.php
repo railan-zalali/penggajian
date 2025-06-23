@@ -16,7 +16,6 @@ class attendances extends Model
         'pengecualian',
     ];
 
-    // Relasi ke model Linmas (banyak ke satu)
     public function linmas()
     {
         return $this->belongsTo(Linmas::class, 'linmas_id');

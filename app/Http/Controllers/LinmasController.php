@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\linmas;
+use App\Models\Linmas;
 use App\Http\Requests\StorelinmasRequest;
 use App\Http\Requests\UpdatelinmasRequest;
 use App\Imports\LinmasImport;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class LinmasController extends Controller
 {
@@ -25,8 +27,14 @@ class LinmasController extends Controller
     public function store(Request $request)
     {
         $validatedData = $this->validateLinmas($request);
-        Linmas::create($validatedData);
-        return redirect()->route('linmas.index')->with('success', 'Data Linmas berhasil ditambahkan!');
+
+        try {
+            Linmas::create($validatedData);
+            return redirect()->route('linmas.index')->with('success', 'Data Perangkat Desa berhasil ditambahkan!');
+        } catch (\Exception $e) {
+            Log::error('Linmas creation failed: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal menambahkan data Perangkat Desa: ' . $e->getMessage())->withInput();
+        }
     }
 
     public function edit(Linmas $linmas)
@@ -37,17 +45,31 @@ class LinmasController extends Controller
     public function update(Request $request, Linmas $linmas)
     {
         $validatedData = $this->validateLinmas($request, $linmas->id);
-        $linmas->update($validatedData);
-        return redirect()->route('linmas.index')->with('success', 'Data Linmas berhasil diupdate!');
+
+        try {
+            $linmas->update($validatedData);
+            return redirect()->route('linmas.index')->with('success', 'Data Perangkat Desa berhasil diupdate!');
+        } catch (\Exception $e) {
+            Log::error('Linmas update failed: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mengupdate data Perangkat Desa: ' . $e->getMessage())->withInput();
+        }
     }
 
     public function destroy(Linmas $linmas)
     {
-        // Pastikan linmas yang dihapus adalah yang dikirimkan melalui form
-        $linmas->delete();
-        return redirect()->route('linmas.index')->with('success', 'Data Linmas berhasil dihapus.');
-    }
+        try {
+            // Periksa apakah linmas memiliki data kehadiran atau penggajian
+            if ($linmas->attendances()->count() > 0 || $linmas->payrolls()->count() > 0) {
+                return redirect()->route('linmas.index')->with('error', 'Tidak dapat menghapus data Perangkat Desa karena masih memiliki data kehadiran atau penggajian');
+            }
 
+            $linmas->delete();
+            return redirect()->route('linmas.index')->with('success', 'Data Perangkat Desa berhasil dihapus.');
+        } catch (\Exception $e) {
+            Log::error('Linmas deletion failed: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal menghapus data Perangkat Desa: ' . $e->getMessage());
+        }
+    }
 
     private function validateLinmas(Request $request, $id = null)
     {
@@ -61,14 +83,32 @@ class LinmasController extends Controller
             'pekerjaan' => 'required|string|max:255',
         ]);
     }
+
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls',
+            'file' => 'required|mimes:xlsx,xls,csv',
         ]);
 
-        Excel::import(new LinmasImport, $request->file('file'));
+        DB::beginTransaction();
 
-        return redirect()->route('linmas.index')->with('success', 'Data Linmas berhasil diimpor!');
+        try {
+            $import = new LinmasImport();
+            Excel::import($import, $request->file('file'));
+
+            // Cek jika ada error pada import
+            $errors = $import->getErrors();
+            if (!empty($errors)) {
+                DB::rollBack();
+                return redirect()->route('linmas.index')->with('error', 'Terjadi kesalahan saat import: ' . implode(', ', $errors));
+            }
+
+            DB::commit();
+            return redirect()->route('linmas.index')->with('success', 'Data Perangkat Desa berhasil diimpor!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Linmas import failed: ' . $e->getMessage());
+            return redirect()->route('linmas.index')->with('error', 'Gagal mengimpor data Perangkat Desa: ' . $e->getMessage());
+        }
     }
 }

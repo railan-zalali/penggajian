@@ -144,6 +144,12 @@
                                         Lembur</th>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Tunjangan</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Potongan</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Total Gaji</th>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -161,6 +167,62 @@
                                             {{ $payroll['total_days_worked'] }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {{ $payroll['total_overtime'] }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            @php
+                                                $totalAllowances = 0;
+                                                if (isset($payroll['total_allowances'])) {
+                                                    $totalAllowances = $payroll['total_allowances'];
+                                                } elseif (isset($payroll['allowances'])) {
+                                                    foreach ($payroll['allowances'] as $allowance) {
+                                                        $totalAllowances += $allowance['value'];
+                                                    }
+                                                }
+                                            @endphp
+                                            @if ($totalAllowances > 0)
+                                                <span class="text-green-600">Rp
+                                                    {{ number_format($totalAllowances, 0, ',', '.') }}</span>
+                                                <button type="button"
+                                                    onclick="showAllowanceDetails('{{ $payroll['nik'] }}')"
+                                                    class="ml-1 text-blue-500 hover:text-blue-700">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </button>
+                                            @else
+                                                <span class="text-gray-500">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            @php
+                                                $totalDeductions = 0;
+                                                if (isset($payroll['total_deductions'])) {
+                                                    $totalDeductions = $payroll['total_deductions'];
+                                                } elseif (isset($payroll['deductions'])) {
+                                                    foreach ($payroll['deductions'] as $deduction) {
+                                                        $totalDeductions += $deduction['value'];
+                                                    }
+                                                }
+                                            @endphp
+                                            @if ($totalDeductions > 0)
+                                                <span class="text-red-600">Rp
+                                                    {{ number_format($totalDeductions, 0, ',', '.') }}</span>
+                                                <button type="button"
+                                                    onclick="showDeductionDetails('{{ $payroll['nik'] }}')"
+                                                    class="ml-1 text-blue-500 hover:text-blue-700">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </button>
+                                            @else
+                                                <span class="text-gray-500">-</span>
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">
                                             Rp {{ number_format($payroll['total_wage'], 0, ',', '.') }}
                                         </td>
@@ -227,6 +289,86 @@
         </div>
     </div>
 
+    <!-- Modal for allowance details -->
+    <div id="allowanceModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title"
+        role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div
+                class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div
+                            class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                Rincian Tunjangan
+                            </h3>
+                            <div class="mt-4">
+                                <div id="allowanceDetails" class="divide-y divide-gray-200">
+                                    <!-- Content will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" onclick="closeModal('allowanceModal')"
+                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for deduction details -->
+    <div id="deductionModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title"
+        role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div
+                class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div
+                            class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                Rincian Potongan
+                            </h3>
+                            <div class="mt-4">
+                                <div id="deductionDetails" class="divide-y divide-gray-200">
+                                    <!-- Content will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" onclick="closeModal('deductionModal')"
+                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('storePayrollForm');
@@ -243,7 +385,9 @@
                         if (data.exists) {
                             if (confirm(
                                     'Data penggajian untuk bulan ini sudah ada. Apakah Anda ingin tetap menyimpan?'
-                                    )) {
+                                )) {
+                                form.appendChild(document.createElement('input')).setAttribute('name',
+                                    'force_save');
                                 form.submit();
                             }
                         } else {
@@ -256,5 +400,68 @@
                 });
             }
         });
+
+        // Store payroll data in a global variable for modals
+        const payrollData = @json($payrollData ?? []);
+
+        function showAllowanceDetails(nik) {
+            const payroll = payrollData.find(p => p.nik === nik);
+            const allowanceDetails = document.getElementById('allowanceDetails');
+            allowanceDetails.innerHTML = '';
+
+            if (payroll && payroll.allowances && payroll.allowances.length > 0) {
+                payroll.allowances.forEach(allowance => {
+                    const item = document.createElement('div');
+                    item.className = 'py-3';
+                    item.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">${allowance.name}</p>
+                                <p class="text-xs text-gray-500">${allowance.code}</p>
+                            </div>
+                            <p class="text-sm font-medium text-green-600">Rp ${new Intl.NumberFormat('id-ID').format(allowance.value)}</p>
+                        </div>
+                    `;
+                    allowanceDetails.appendChild(item);
+                });
+            } else {
+                allowanceDetails.innerHTML =
+                    '<p class="py-3 text-sm text-gray-500 text-center">Tidak ada data tunjangan</p>';
+            }
+
+            document.getElementById('allowanceModal').classList.remove('hidden');
+        }
+
+        function showDeductionDetails(nik) {
+            const payroll = payrollData.find(p => p.nik === nik);
+            const deductionDetails = document.getElementById('deductionDetails');
+            deductionDetails.innerHTML = '';
+
+            if (payroll && payroll.deductions && payroll.deductions.length > 0) {
+                payroll.deductions.forEach(deduction => {
+                    const item = document.createElement('div');
+                    item.className = 'py-3';
+                    item.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">${deduction.name}</p>
+                                <p class="text-xs text-gray-500">${deduction.code}</p>
+                            </div>
+                            <p class="text-sm font-medium text-red-600">Rp ${new Intl.NumberFormat('id-ID').format(deduction.value)}</p>
+                        </div>
+                    `;
+                    deductionDetails.appendChild(item);
+                });
+            } else {
+                deductionDetails.innerHTML =
+                '<p class="py-3 text-sm text-gray-500 text-center">Tidak ada data potongan</p>';
+            }
+
+            document.getElementById('deductionModal').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
     </script>
 </x-app-layout>

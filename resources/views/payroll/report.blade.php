@@ -74,9 +74,27 @@
             transition: background-color 0.3s ease;
         }
 
-        td:last-child {
+        .amount-column {
+            text-align: right;
             font-weight: bold;
-            color: #2ecc71;
+        }
+
+        .total-row {
+            background-color: #eaf2f8;
+            font-weight: bold;
+        }
+
+        .total-row td {
+            border-top: 2px solid #3498db;
+        }
+
+        .section-title {
+            margin-top: 40px;
+            margin-bottom: 15px;
+            font-size: 20px;
+            color: #2c3e50;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 5px;
         }
 
         @media print {
@@ -98,31 +116,157 @@
 <body>
     <div class="container">
         <h1>Laporan Penggajian Perangkat Desa</h1>
-        <p>Periode: {{ \Carbon\Carbon::parse($startDate)->format('F Y') }} -
-            {{ \Carbon\Carbon::parse($endDate)->format('F Y') }}</p>
+        <p>Periode: {{ \Carbon\Carbon::parse($startDate)->format('d F Y') }} -
+            {{ \Carbon\Carbon::parse($endDate)->format('d F Y') }}</p>
 
         <table>
             <thead>
                 <tr>
                     <th>NIK</th>
                     <th>Nama</th>
-                    <th>Hari Masuk</th>
+                    <th>Hari Kerja</th>
+                    <th>Gaji Pokok</th>
                     <th>Lembur</th>
+                    <th>Tunjangan</th>
+                    <th>Potongan</th>
                     <th>Total Gaji</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($payrollData as $payroll)
+                @php
+                    $totalBaseSalary = 0;
+                    $totalOvertime = 0;
+                    $totalAllowances = 0;
+                    $totalDeductions = 0;
+                    $totalSalary = 0;
+                @endphp
+
+                @foreach ($payrollData as $data)
+                    @php
+                        $totalBaseSalary += $data['base_salary'];
+                        $totalOvertime += $data['overtime_payment'];
+
+                        $allowanceAmount = 0;
+                        if (isset($data['total_allowances'])) {
+                            $allowanceAmount = $data['total_allowances'];
+                        } elseif (isset($data['allowances'])) {
+                            foreach ($data['allowances'] as $allowance) {
+                                $allowanceAmount += $allowance['value'];
+                            }
+                        }
+                        $totalAllowances += $allowanceAmount;
+
+                        $deductionAmount = 0;
+                        if (isset($data['total_deductions'])) {
+                            $deductionAmount = $data['total_deductions'];
+                        } elseif (isset($data['deductions'])) {
+                            foreach ($data['deductions'] as $deduction) {
+                                $deductionAmount += $deduction['value'];
+                            }
+                        }
+                        $totalDeductions += $deductionAmount;
+
+                        $totalSalary += $data['total_wage'];
+                    @endphp
+
                     <tr>
-                        <td>{{ $payroll['nik'] }}</td>
-                        <td>{{ $payroll['nama'] }}</td>
-                        <td>{{ $payroll['total_days_worked'] }}</td>
-                        <td>{{ $payroll['total_overtime'] }}</td>
-                        <td>Rp {{ number_format($payroll['total_wage'], 0, ',', '.') }}</td>
+                        <td>{{ $data['nik'] }}</td>
+                        <td>{{ $data['nama'] }}</td>
+                        <td>{{ $data['total_days_worked'] }}</td>
+                        <td class="amount-column">Rp {{ number_format($data['base_salary'], 0, ',', '.') }}</td>
+                        <td class="amount-column">Rp {{ number_format($data['overtime_payment'], 0, ',', '.') }}</td>
+                        <td class="amount-column">Rp {{ number_format($allowanceAmount, 0, ',', '.') }}</td>
+                        <td class="amount-column">Rp {{ number_format($deductionAmount, 0, ',', '.') }}</td>
+                        <td class="amount-column">Rp {{ number_format($data['total_wage'], 0, ',', '.') }}</td>
                     </tr>
                 @endforeach
+
+                <!-- Total Row -->
+                <tr class="total-row">
+                    <td colspan="3"><strong>TOTAL</strong></td>
+                    <td class="amount-column">Rp {{ number_format($totalBaseSalary, 0, ',', '.') }}</td>
+                    <td class="amount-column">Rp {{ number_format($totalOvertime, 0, ',', '.') }}</td>
+                    <td class="amount-column">Rp {{ number_format($totalAllowances, 0, ',', '.') }}</td>
+                    <td class="amount-column">Rp {{ number_format($totalDeductions, 0, ',', '.') }}</td>
+                    <td class="amount-column">Rp {{ number_format($totalSalary, 0, ',', '.') }}</td>
+                </tr>
             </tbody>
         </table>
+
+        <!-- Detailed breakdown for each employee -->
+        <h2 class="section-title">Rincian Tunjangan & Potongan</h2>
+
+        @foreach ($payrollData as $data)
+            <h3 style="margin-top: 30px; color: #3498db;">{{ $data['nama'] }} ({{ $data['nik'] }})</h3>
+
+            <!-- Allowances Table -->
+            @if (isset($data['allowances']) && count($data['allowances']) > 0)
+                <h4 style="margin-bottom: 10px; color: #27ae60;">Tunjangan</h4>
+                <table style="margin-bottom: 20px;">
+                    <thead>
+                        <tr>
+                            <th>Nama Tunjangan</th>
+                            <th>Jumlah</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($data['allowances'] as $allowance)
+                            <tr>
+                                <td>{{ $allowance['name'] }}</td>
+                                <td class="amount-column">Rp {{ number_format($allowance['value'], 0, ',', '.') }}</td>
+                            </tr>
+                        @endforeach
+                        <tr class="total-row">
+                            <td><strong>Total Tunjangan</strong></td>
+                            @php
+                                $totalAllowance = 0;
+                                foreach ($data['allowances'] as $allowance) {
+                                    $totalAllowance += $allowance['value'];
+                                }
+                            @endphp
+                            <td class="amount-column">Rp {{ number_format($totalAllowance, 0, ',', '.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            @else
+                <p style="color: #7f8c8d; font-style: italic; margin-bottom: 20px;">Tidak ada tunjangan</p>
+            @endif
+
+            <!-- Deductions Table -->
+            @if (isset($data['deductions']) && count($data['deductions']) > 0)
+                <h4 style="margin-bottom: 10px; color: #e74c3c;">Potongan</h4>
+                <table style="margin-bottom: 30px;">
+                    <thead>
+                        <tr>
+                            <th>Nama Potongan</th>
+                            <th>Jumlah</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($data['deductions'] as $deduction)
+                            <tr>
+                                <td>{{ $deduction['name'] }}</td>
+                                <td class="amount-column">Rp {{ number_format($deduction['value'], 0, ',', '.') }}</td>
+                            </tr>
+                        @endforeach
+                        <tr class="total-row">
+                            <td><strong>Total Potongan</strong></td>
+                            @php
+                                $totalDeduction = 0;
+                                foreach ($data['deductions'] as $deduction) {
+                                    $totalDeduction += $deduction['value'];
+                                }
+                            @endphp
+                            <td class="amount-column">Rp {{ number_format($totalDeduction, 0, ',', '.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            @else
+                <p style="color: #7f8c8d; font-style: italic; margin-bottom: 30px;">Tidak ada potongan</p>
+            @endif
+
+            <hr style="border: 1px dashed #e0e0e0; margin-bottom: 20px;">
+        @endforeach
     </div>
 </body>
 
