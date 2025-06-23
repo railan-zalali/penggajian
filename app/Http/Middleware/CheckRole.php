@@ -8,18 +8,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckRole
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
     public function handle(Request $request, Closure $next, string $role): Response
     {
-        if (!$request->user() || $request->user()->role !== $role) {
-            if ($request->user() && $request->user()->role === 'perangkat_desa') {
-                return redirect()->route('perangkat.dashboard');
-            }
-            return redirect()->route('dashboard');
+        if (!$request->user() || !$request->user()->hasRole($role)) {
+            abort(403, 'Unauthorized action.');
         }
 
         return $next($request);

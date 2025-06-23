@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('attendances', function (Blueprint $table) {
             $table->id();
             $table->foreignId('linmas_id')->constrained('linmas');
-            $table->dateTime('waktu');
+            $table->dateTime('waktu')->date_format('Y-m-d H:i'); // Waktu kehadiran
             $table->string('status'); // C/Masuk, C/Keluar
             $table->string('status_baru')->nullable(); // Lembur Masuk, Lembur Keluar
             $table->string('pengecualian')->nullable();

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attendances;
 use App\Models\Linmas;
-use App\Models\attendances;
 use App\Models\Payroll;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -16,7 +16,7 @@ class DashboardController extends Controller
     {
         // Metrik Dasar
         $totalLinmas = Linmas::count();
-        $attendanceThisMonth = attendances::whereMonth('waktu', Carbon::now()->month)
+        $attendanceThisMonth = Attendances::whereMonth('waktu', Carbon::now()->month)
             ->whereYear('waktu', Carbon::now()->year)
             ->count();
         $totalSalary = Payroll::where('payment_status', 'paid')->sum('total_salary');

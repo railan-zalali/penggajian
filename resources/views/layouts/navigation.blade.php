@@ -33,7 +33,7 @@
                     </x-nav-link>
                 </div>
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('payroll.history')" :active="request()->routeIs('payroll.history')">
+                    <x-nav-link :href="route('payroll.history.index')" :active="request()->routeIs('payroll.history')">
                         {{ __('Riwayat Gaji') }}
                     </x-nav-link>
                 </div>
@@ -149,7 +149,7 @@
             <x-responsive-nav-link :href="route('payroll.index')" :active="request()->routeIs('payroll.index')">
                 {{ __('Penggajian') }}
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('payroll.history')" :active="request()->routeIs('payroll.history')">
+            <x-responsive-nav-link :href="route('payroll.history.index')" :active="request()->routeIs('payroll.history')">
                 {{ __('Riwayat Gaji') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('month-closing.index')" :active="request()->routeIs('month-closing.*')">

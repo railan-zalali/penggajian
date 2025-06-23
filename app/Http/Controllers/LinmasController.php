@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Linmas;
-use App\Http\Requests\StorelinmasRequest;
-use App\Http\Requests\UpdatelinmasRequest;
 use App\Imports\LinmasImport;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -13,7 +11,6 @@ use Illuminate\Support\Facades\Log;
 
 class LinmasController extends Controller
 {
-    // LinmasController - tambahkan fitur pencarian dan filter
     public function index(Request $request)
     {
         $query = Linmas::query();

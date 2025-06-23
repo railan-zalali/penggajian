@@ -80,8 +80,7 @@ class PerangkatDashboardController extends Controller
     {
         $user = Auth::user();
 
-        // Cek akses
-        if ($payroll->linmas_id !== $user->linmas_id) {
+        if ($payroll->linmas_id !== $user->linmas->id) {
             abort(403, 'Unauthorized action.');
         }
 

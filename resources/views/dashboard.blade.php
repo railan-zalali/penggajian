@@ -140,7 +140,7 @@
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-semibold text-gray-800">Penggajian Terakhir</h2>
-                        <a href="{{ route('payroll.history') }}"
+                        <a href="{{ route('payroll.history.index') }}"
                             class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Lihat Semua</a>
                     </div>
                     <div class="divide-y divide-gray-200">

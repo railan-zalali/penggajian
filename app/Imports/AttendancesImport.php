@@ -41,10 +41,18 @@ class AttendancesImport implements ToModel, WithHeadingRow, WithValidation, Skip
                 $this->errors[] = "Perangkat Desa dengan nama '{$row['nama']}' tidak ditemukan";
                 return null;
             }
+            $formats = ['Y/m/d H:i', 'Y-m-d H:i', 'd/m/Y H:i', 'm/d/Y H:i'];
+            $waktu = null;
 
             // Parsing tanggal dengan validasi
             try {
-                $waktu = Carbon::parse($row['waktu']);
+                foreach ($formats as $format) {
+                    $parsed = Carbon::createFromFormat($format, $row['waktu']);
+                    if ($parsed !== false) {
+                        $waktu = $parsed;
+                        break;
+                    }
+                }
             } catch (\Exception $e) {
                 $this->errors[] = "Format tanggal '{$row['waktu']}' tidak valid. Gunakan format 'YYYY-MM-DD HH:MM:SS'";
                 return null;

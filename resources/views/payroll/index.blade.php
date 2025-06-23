@@ -87,7 +87,7 @@
                 <!-- Links to related pages -->
                 <div class="p-6 bg-gray-50">
                     <div class="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-                        <a href="{{ route('payroll.history') }}"
+                        <a href="{{ route('payroll.history.index') }}"
                             class="inline-flex items-center text-indigo-600 hover:text-indigo-800 transition duration-150 ease-in-out">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20"
                                 fill="currentColor">
@@ -454,7 +454,7 @@
                 });
             } else {
                 deductionDetails.innerHTML =
-                '<p class="py-3 text-sm text-gray-500 text-center">Tidak ada data potongan</p>';
+                    '<p class="py-3 text-sm text-gray-500 text-center">Tidak ada data potongan</p>';
             }
 
             document.getElementById('deductionModal').classList.remove('hidden');
