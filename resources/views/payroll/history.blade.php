@@ -157,6 +157,61 @@
                                         class="px-2 py-1 bg-red-200 text-red-800 rounded-full text-xs">Dibatalkan</span>
                                 @endif
                             </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <!-- Indikator status -->
+                                    @switch($payroll->processing_status)
+                                        @case('draft')
+                                            <span
+                                                class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                Draft
+                                            </span>
+                                        @break
+
+                                        @case('verified')
+                                            <span
+                                                class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                Terverifikasi
+                                            </span>
+                                        @break
+
+                                        @case('calculated')
+                                            <span
+                                                class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                Dihitung
+                                            </span>
+                                        @break
+
+                                        @case('processed')
+                                            <span
+                                                class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                Diproses
+                                            </span>
+                                        @break
+
+                                        @case('completed')
+                                            <span
+                                                class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                                Selesai
+                                            </span>
+                                        @break
+
+                                        @default
+                                            <span
+                                                class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                Tidak Diketahui
+                                            </span>
+                                        @break
+
+                                        @case('rejected')
+                                            <span
+                                                class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                Ditolak
+                                            </span>
+                                        @break
+                                    @endswitch
+                                </div>
+                            </td>
                             <td class="py-3 px-6 text-center">
                                 <div class="flex item-center justify-center space-x-2">
                                     <button type="button" onclick="openPaymentModal({{ $payroll->id }})"
@@ -192,141 +247,141 @@
                                 </div>
                             </td>
                         </tr>
-                    @empty
-                        <tr class="border-b border-gray-200">
-                            <td class="py-3 px-6 text-center" colspan="6">
-                                <div class="flex flex-col items-center justify-center py-8">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mb-4"
-                                        viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd"
-                                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                                            clip-rule="evenodd" />
+                        @empty
+                            <tr class="border-b border-gray-200">
+                                <td class="py-3 px-6 text-center" colspan="6">
+                                    <div class="flex flex-col items-center justify-center py-8">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mb-4"
+                                            viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd"
+                                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                                clip-rule="evenodd" />
+                                        </svg>
+                                        <p class="text-gray-600 text-lg">Tidak ada data penggajian ditemukan</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4">
+                {{ $payrolls->withQueryString()->links() }}
+            </div>
+        </div>
+
+        <!-- Payment Status Modal -->
+        <div id="paymentModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title"
+            role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div
+                    class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <form id="paymentStatusForm" action="" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                            <div class="sm:flex sm:items-start">
+                                <div
+                                    class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <p class="text-gray-600 text-lg">Tidak ada data penggajian ditemukan</p>
                                 </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <div class="mt-4">
-            {{ $payrolls->withQueryString()->links() }}
-        </div>
-    </div>
-
-    <!-- Payment Status Modal -->
-    <div id="paymentModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title"
-        role="dialog" aria-modal="true">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div
-                class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                <form id="paymentStatusForm" action="" method="POST">
-                    @csrf
-                    @method('PUT')
-                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <div class="sm:flex sm:items-start">
-                            <div
-                                class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                                    Update Status Pembayaran
-                                </h3>
-                                <div class="mt-4 space-y-4">
-                                    <div>
-                                        <label for="payment_status"
-                                            class="block text-sm font-medium text-gray-700">Status</label>
-                                        <select id="payment_status" name="payment_status"
-                                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
-                                            <option value="pending">Pending</option>
-                                            <option value="paid">Dibayar</option>
-                                            <option value="cancelled">Dibatalkan</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label for="payment_method"
-                                            class="block text-sm font-medium text-gray-700">Metode Pembayaran</label>
-                                        <input type="text" id="payment_method" name="payment_method"
-                                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                                            placeholder="Transfer Bank, Tunai, dll">
-                                    </div>
-                                    <div>
-                                        <label for="payment_reference"
-                                            class="block text-sm font-medium text-gray-700">Referensi
-                                            Pembayaran</label>
-                                        <input type="text" id="payment_reference" name="payment_reference"
-                                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                                            placeholder="No. Referensi, Kwitansi, dll">
-                                    </div>
-                                    <div>
-                                        <label for="notes"
-                                            class="block text-sm font-medium text-gray-700">Catatan</label>
-                                        <textarea id="notes" name="notes" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                                            rows="3"></textarea>
+                                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                        Update Status Pembayaran
+                                    </h3>
+                                    <div class="mt-4 space-y-4">
+                                        <div>
+                                            <label for="payment_status"
+                                                class="block text-sm font-medium text-gray-700">Status</label>
+                                            <select id="payment_status" name="payment_status"
+                                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                                                <option value="pending">Pending</option>
+                                                <option value="paid">Dibayar</option>
+                                                <option value="cancelled">Dibatalkan</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label for="payment_method"
+                                                class="block text-sm font-medium text-gray-700">Metode Pembayaran</label>
+                                            <input type="text" id="payment_method" name="payment_method"
+                                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                                placeholder="Transfer Bank, Tunai, dll">
+                                        </div>
+                                        <div>
+                                            <label for="payment_reference"
+                                                class="block text-sm font-medium text-gray-700">Referensi
+                                                Pembayaran</label>
+                                            <input type="text" id="payment_reference" name="payment_reference"
+                                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                                placeholder="No. Referensi, Kwitansi, dll">
+                                        </div>
+                                        <div>
+                                            <label for="notes"
+                                                class="block text-sm font-medium text-gray-700">Catatan</label>
+                                            <textarea id="notes" name="notes" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                                rows="3"></textarea>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                        <button type="submit"
-                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
-                            Simpan
-                        </button>
-                        <button type="button" onclick="closePaymentModal()"
-                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                            Batal
-                        </button>
-                    </div>
-                </form>
+                        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                            <button type="submit"
+                                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                                Simpan
+                            </button>
+                            <button type="button" onclick="closePaymentModal()"
+                                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                                Batal
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle month_year select
-            const monthYearSelect = document.getElementById('month_year');
-            monthYearSelect.addEventListener('change', function() {
-                const value = this.value;
-                if (value) {
-                    const [month, year] = value.split(',');
-                    const form = this.closest('form');
-                    const monthInput = document.createElement('input');
-                    monthInput.type = 'hidden';
-                    monthInput.name = 'month';
-                    monthInput.value = month;
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Handle month_year select
+                const monthYearSelect = document.getElementById('month_year');
+                monthYearSelect.addEventListener('change', function() {
+                    const value = this.value;
+                    if (value) {
+                        const [month, year] = value.split(',');
+                        const form = this.closest('form');
+                        const monthInput = document.createElement('input');
+                        monthInput.type = 'hidden';
+                        monthInput.name = 'month';
+                        monthInput.value = month;
 
-                    const yearInput = document.createElement('input');
-                    yearInput.type = 'hidden';
-                    yearInput.name = 'year';
-                    yearInput.value = year;
+                        const yearInput = document.createElement('input');
+                        yearInput.type = 'hidden';
+                        yearInput.name = 'year';
+                        yearInput.value = year;
 
-                    form.appendChild(monthInput);
-                    form.appendChild(yearInput);
-                }
+                        form.appendChild(monthInput);
+                        form.appendChild(yearInput);
+                    }
+                });
             });
-        });
 
-        function openPaymentModal(payrollId) {
-            const modal = document.getElementById('paymentModal');
-            const form = document.getElementById('paymentStatusForm');
-            form.action = `/payroll/history/${payrollId}/status`;
-            modal.classList.remove('hidden');
-        }
+            function openPaymentModal(payrollId) {
+                const modal = document.getElementById('paymentModal');
+                const form = document.getElementById('paymentStatusForm');
+                form.action = `/payroll/history/${payrollId}/status`;
+                modal.classList.remove('hidden');
+            }
 
-        function closePaymentModal() {
-            const modal = document.getElementById('paymentModal');
-            modal.classList.add('hidden');
-        }
-    </script>
-</x-app-layout>
+            function closePaymentModal() {
+                const modal = document.getElementById('paymentModal');
+                modal.classList.add('hidden');
+            }
+        </script>
+    </x-app-layout>

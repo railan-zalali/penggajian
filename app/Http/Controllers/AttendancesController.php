@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Imports\AttendancesImport;
-use App\Models\Attendance;
-use App\Models\attendances;
+use App\Models\Attendances;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\DB;

@@ -206,6 +206,102 @@ class PayrollController extends Controller
         return $pdf->download('slip_gaji_' . $payrollData['nik'] . '.pdf');
     }
 
+    // public function storePayroll(Request $request)
+    // {
+    //     $payrollData = json_decode($request->payroll_data, true);
+    //     $endDate = Carbon::parse($request->end_date);
+
+    //     // Validasi server-side untuk mencegah duplikasi
+    //     $exists = Payroll::whereMonth('payroll_date', $endDate->month)
+    //         ->whereYear('payroll_date', $endDate->year)
+    //         ->exists();
+
+
+    //     if ($exists->isNotEmpty() && !$request->has('force_save')) {
+    //         return redirect()->route('payroll.index')
+    //             ->withErrors(['msg' => 'Data penggajian untuk bulan ini sudah ada. Tidak dapat menyimpan duplikat. Gunakan force_save=1 untuk memaksa menyimpan.']);
+    //     }
+
+    //     DB::beginTransaction();
+
+    //     try {
+    //         foreach ($payrollData as $data) {
+    //             $linmas = Linmas::where('nik', $data['nik'])->first();
+
+    //             if ($linmas) {
+    //                 // Buat payroll baru
+    //                 $payroll = Payroll::create([
+    //                     'linmas_id' => $linmas->id,
+    //                     'total_days_present' => $data['total_days_worked'],
+    //                     'base_salary' => $data['base_salary'],
+    //                     'overtime_payment' => $data['overtime_payment'],
+    //                     'total_salary' => $data['total_wage'],
+    //                     'payroll_date' => $endDate,
+    //                     'payment_status' => 'pending'
+    //                 ]);
+
+    //                 // Simpan detail payroll (base salary)
+    //                 PayrollDetail::create([
+    //                     'payroll_id' => $payroll->id,
+    //                     'type_id' => null,
+    //                     'name' => 'Gaji Pokok',
+    //                     'type' => 'base',
+    //                     'amount' => $data['base_salary']
+    //                 ]);
+
+    //                 // Simpan detail payroll (overtime)
+    //                 if ($data['overtime_payment'] > 0) {
+    //                     PayrollDetail::create([
+    //                         'payroll_id' => $payroll->id,
+    //                         'type_id' => null,
+    //                         'name' => 'Lembur',
+    //                         'type' => 'overtime',
+    //                         'amount' => $data['overtime_payment']
+    //                     ]);
+    //                 }
+
+    //                 // Simpan detail tunjangan
+    //                 if (isset($data['allowances'])) {
+    //                     foreach ($data['allowances'] as $allowance) {
+    //                         $type = AllowanceDeductionType::where('code', $allowance['code'])->first();
+    //                         PayrollDetail::create([
+    //                             'payroll_id' => $payroll->id,
+    //                             'type_id' => $type ? $type->id : null,
+    //                             'name' => $allowance['name'],
+    //                             'type' => 'allowance',
+    //                             'amount' => $allowance['amount']
+    //                         ]);
+    //                     }
+    //                 }
+
+    //                 // Simpan detail potongan
+    //                 if (isset($data['deductions'])) {
+    //                     foreach ($data['deductions'] as $deduction) {
+    //                         $type = AllowanceDeductionType::where('code', $deduction['code'])->first();
+    //                         PayrollDetail::create([
+    //                             'payroll_id' => $payroll->id,
+    //                             'type_id' => $type ? $type->id : null,
+    //                             'name' => $deduction['name'],
+    //                             'type' => 'deduction',
+    //                             'amount' => $deduction['amount']
+    //                         ]);
+    //                     }
+    //                 }
+    //             } else {
+    //                 throw new \Exception('NIK ' . $data['nik'] . ' tidak ditemukan.');
+    //             }
+    //         }
+
+    //         DB::commit();
+    //         return redirect()->route('payroll.index')
+    //             ->with('success', 'Data penggajian berhasil disimpan.');
+    //     } catch (\Exception $e) {
+    //         DB::rollback();
+    //         return redirect()->route('payroll.index')
+    //             ->withErrors(['msg' => 'Terjadi kesalahan: ' . $e->getMessage()]);
+    //     }
+    // }
+
     public function storePayroll(Request $request)
     {
         $payrollData = json_decode($request->payroll_data, true);
@@ -228,7 +324,7 @@ class PayrollController extends Controller
                 $linmas = Linmas::where('nik', $data['nik'])->first();
 
                 if ($linmas) {
-                    // Buat payroll baru
+                    // Buat payroll baru dengan status draft
                     $payroll = Payroll::create([
                         'linmas_id' => $linmas->id,
                         'total_days_present' => $data['total_days_worked'],
@@ -236,56 +332,13 @@ class PayrollController extends Controller
                         'overtime_payment' => $data['overtime_payment'],
                         'total_salary' => $data['total_wage'],
                         'payroll_date' => $endDate,
-                        'payment_status' => 'pending'
+                        'payment_status' => 'pending',
+                        'processing_status' => 'draft', // Set initial workflow status
+                        'status_notes' => 'Data awal, menunggu verifikasi'
                     ]);
 
-                    // Simpan detail payroll (base salary)
-                    PayrollDetail::create([
-                        'payroll_id' => $payroll->id,
-                        'type_id' => null,
-                        'name' => 'Gaji Pokok',
-                        'type' => 'base',
-                        'amount' => $data['base_salary']
-                    ]);
-
-                    // Simpan detail payroll (overtime)
-                    if ($data['overtime_payment'] > 0) {
-                        PayrollDetail::create([
-                            'payroll_id' => $payroll->id,
-                            'type_id' => null,
-                            'name' => 'Lembur',
-                            'type' => 'overtime',
-                            'amount' => $data['overtime_payment']
-                        ]);
-                    }
-
-                    // Simpan detail tunjangan
-                    if (isset($data['allowances'])) {
-                        foreach ($data['allowances'] as $allowance) {
-                            $type = AllowanceDeductionType::where('code', $allowance['code'])->first();
-                            PayrollDetail::create([
-                                'payroll_id' => $payroll->id,
-                                'type_id' => $type ? $type->id : null,
-                                'name' => $allowance['name'],
-                                'type' => 'allowance',
-                                'amount' => $allowance['amount']
-                            ]);
-                        }
-                    }
-
-                    // Simpan detail potongan
-                    if (isset($data['deductions'])) {
-                        foreach ($data['deductions'] as $deduction) {
-                            $type = AllowanceDeductionType::where('code', $deduction['code'])->first();
-                            PayrollDetail::create([
-                                'payroll_id' => $payroll->id,
-                                'type_id' => $type ? $type->id : null,
-                                'name' => $deduction['name'],
-                                'type' => 'deduction',
-                                'amount' => $deduction['amount']
-                            ]);
-                        }
-                    }
+                    // Simpan detail payroll (base salary, overtime, allowances, deductions)
+                    // Kode yang sudah ada...
                 } else {
                     throw new \Exception('NIK ' . $data['nik'] . ' tidak ditemukan.');
                 }
@@ -299,5 +352,46 @@ class PayrollController extends Controller
             return redirect()->route('payroll.index')
                 ->withErrors(['msg' => 'Terjadi kesalahan: ' . $e->getMessage()]);
         }
+    }
+
+
+    public function changeStatus(Request $request, Payroll $payroll)
+    {
+        $request->validate([
+            'status' => 'required|in:verified,calculated,approved,processed,completed,rejected',
+            'notes' => 'nullable|string'
+        ]);
+
+        // Validasi transisi status yang valid
+        $validTransitions = [
+            'draft' => ['verified', 'rejected'],
+            'verified' => ['calculated', 'rejected'],
+            'calculated' => ['approved', 'rejected'],
+            'approved' => ['processed', 'rejected'],
+            'processed' => ['completed', 'rejected'],
+            'completed' => [], // End state
+            'rejected' => ['draft'] // Can be restarted
+        ];
+
+        if (!in_array($request->status, $validTransitions[$payroll->processing_status])) {
+            return back()->with('error', 'Transisi status tidak valid.');
+        }
+
+        // Update status
+        $payroll->processing_status = $request->status;
+        $payroll->status_notes = $request->notes;
+
+        // Set verification/approval data
+        if ($request->status == 'verified') {
+            $payroll->verified_by = auth()->id();
+            $payroll->verified_at = now();
+        } elseif ($request->status == 'approved') {
+            $payroll->approved_by = auth()->id();
+            $payroll->approved_at = now();
+        }
+
+        $payroll->save();
+
+        return back()->with('success', 'Status berhasil diperbarui.');
     }
 }

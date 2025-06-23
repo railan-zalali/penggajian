@@ -13,10 +13,32 @@ use Illuminate\Support\Facades\Log;
 
 class LinmasController extends Controller
 {
-    public function index()
+    // LinmasController - tambahkan fitur pencarian dan filter
+    public function index(Request $request)
     {
-        $linmas = Linmas::all();
-        return view('linmas.index', compact('linmas'));
+        $query = Linmas::query();
+
+        // Pencarian
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter pendidikan
+        if ($request->has('pendidikan') && $request->pendidikan != 'all') {
+            $query->where('pendidikan', $request->pendidikan);
+        }
+
+        // Pagination yang lebih baik
+        $linmas = $query->orderBy('nama')->paginate(15);
+
+        $pendidikanOptions = Linmas::select('pendidikan')
+            ->distinct()->pluck('pendidikan');
+
+        return view('linmas.index', compact('linmas', 'pendidikanOptions'));
     }
 
     public function create()

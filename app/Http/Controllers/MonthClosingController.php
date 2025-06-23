@@ -61,16 +61,33 @@ class MonthClosingController extends Controller
         // Parse period into year and month
         list($year, $month) = explode('-', $request->period);
 
-        // Check if this period is already closed
+        // Cek apakah bulan sudah ditutup
         if (MonthClosing::isMonthClosed($year, $month)) {
-            return redirect()->route('month-closing.create')
-                ->with('error', 'Periode ini sudah ditutup sebelumnya.');
+            return redirect()->back()->with('error', 'Periode ini sudah ditutup sebelumnya.');
         }
 
-        // Begin transaction
-        DB::beginTransaction();
+        // Create mutex lock SEBELUM transaksi
+        $lockFile = storage_path("app/month_closing_{$year}_{$month}.lock");
+
+        // Cek apakah proses sudah berjalan
+        if (file_exists($lockFile)) {
+            $lockTime = file_get_contents($lockFile);
+            $lockAge = time() - strtotime($lockTime);
+
+            // Jika lock berusia > 30 menit, anggap proses sebelumnya gagal
+            if ($lockAge < 1800) {
+                return redirect()->back()->with('error', 'Proses tutup bulan sedang berjalan. Mohon tunggu beberapa saat.');
+            }
+        }
+
+        // Buat lock baru
+        file_put_contents($lockFile, Carbon::now()->toDateTimeString());
+
 
         try {
+            // Begin transaction
+            DB::beginTransaction();
+
             // Get all payrolls for this period
             $period = Carbon::createFromDate($year, $month, 1);
             $payrolls = Payroll::whereYear('payroll_date', $year)
@@ -116,21 +133,17 @@ class MonthClosingController extends Controller
             ]);
 
             // Update payrolls to link to this closing
+
             foreach ($payrolls as $payroll) {
                 $payroll->month_closing_id = $closing->id;
                 $payroll->save();
             }
 
             DB::commit();
-
-            // Create a mutex lock file (untuk mencegah race condition)
-            $lockFile = storage_path("app/month_closing_{$year}_{$month}.lock");
-            file_put_contents($lockFile, Carbon::now()->toDateTimeString());
-
-            return redirect()->route('month-closing.index')
-                ->with('success', 'Periode ' . $period->format('F Y') . ' berhasil ditutup.');
+            return redirect()->route('month-closing.index')->with('success', 'Periode berhasil ditutup.');
         } catch (\Exception $e) {
             DB::rollback();
+            @unlink($lockFile);
             Log::error('Month closing failed: ' . $e->getMessage());
             return redirect()->route('month-closing.create')
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());

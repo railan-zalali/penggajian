@@ -11,7 +11,10 @@ use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\SalaryRateController;
 use App\Http\Controllers\AllowanceDeductionController;
 use App\Http\Controllers\MonthClosingController;
+use App\Http\Controllers\PayrollWorkflowController;
+use App\Http\Controllers\PerangkatDashboardController;
 use App\Http\Controllers\TemplateController;
+use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -29,12 +32,14 @@ Route::get('/', function () {
     return view('home');
 });
 
-// Route::get('/dashboard', function () {
-//     return view('dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
-
 require __DIR__ . '/auth.php';
-Route::middleware('auth')->group(function () {
+
+// Admin Routes
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+
+    // User Management Routes
+    Route::resource('users', UserManagementController::class);
+
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -101,5 +106,34 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/allowances-deductions/linmas/{linmas}/assign', [AllowanceDeductionController::class, 'showAssignForm'])->name('settings.allowances-deductions.assign');
     Route::post('settings/allowances-deductions/linmas/{linmas}/assign', [AllowanceDeductionController::class, 'saveAssignments'])->name('settings.allowances-deductions.save-assignments');
 
+    // Payroll Workflow Routes
+    Route::prefix('payroll/workflow')->name('payroll.workflow.')->group(function () {
+        Route::get('/', [PayrollWorkflowController::class, 'index'])->name('index');
+        Route::get('/report', [PayrollWorkflowController::class, 'report'])->name('report');
+        Route::get('/{payroll}', [PayrollWorkflowController::class, 'show'])->name('show');
+        Route::put('/{payroll}/status', [PayrollWorkflowController::class, 'updateStatus'])->name('update-status');
+    });
+
+    // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
+
+// Perangkat Desa Routes
+Route::middleware(['auth', 'role:perangkat_desa'])->prefix('perangkat')->name('perangkat.')->group(function () {
+    Route::get('/dashboard', [PerangkatDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/profile', [PerangkatDashboardController::class, 'profile'])->name('profile');
+    Route::get('/attendances', [PerangkatDashboardController::class, 'attendances'])->name('attendances');
+    Route::get('/payrolls', [PerangkatDashboardController::class, 'payrolls'])->name('payrolls');
+    Route::get('/payrolls/{payroll}', [PerangkatDashboardController::class, 'payrollDetail'])->name('payroll-detail');
+});
+
+// Update route login untuk redirect berdasarkan role
+Route::get('/home', function () {
+    if (auth()->check()) {
+        if (auth()->user()->role === 'perangkat_desa') {
+            return redirect()->route('perangkat.dashboard');
+        }
+        return redirect()->route('admin.dashboard');
+    }
+    return redirect('/');
+})->name('home.redirect');
