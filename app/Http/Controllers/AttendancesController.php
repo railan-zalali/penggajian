@@ -26,7 +26,50 @@ class AttendancesController extends Controller
         DB::beginTransaction();
 
         try {
+            // Baca file terlebih dahulu untuk validasi periode
             $import = new AttendancesImport();
+            
+            // Cek apakah ada data yang akan diimpor untuk periode yang sudah ditutup
+            $tempFile = $request->file('file')->store('temp');
+            $data = Excel::toCollection($import, storage_path('app/' . $tempFile))->first();
+            
+            $hasClosedPeriod = false;
+            $closedPeriods = [];
+            
+            foreach ($data as $index => $row) {
+                if ($index === 0) continue; // Skip header row
+                
+                if (isset($row[3]) && !empty($row[3])) { // Kolom waktu
+                    try {
+                        $date = \Carbon\Carbon::parse($row[3]);
+                        $year = $date->year;
+                        $month = $date->month;
+                        
+                        if (\App\Models\MonthClosing::isMonthClosed($year, $month)) {
+                            $hasClosedPeriod = true;
+                            $period = $date->format('F Y');
+                            if (!in_array($period, $closedPeriods)) {
+                                $closedPeriods[] = $period;
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        // Skip invalid date format
+                        continue;
+                    }
+                }
+            }
+            
+            // Hapus file temporary
+            if (file_exists(storage_path('app/' . $tempFile))) {
+                unlink(storage_path('app/' . $tempFile));
+            }
+            
+            if ($hasClosedPeriod) {
+                DB::rollBack();
+                return redirect()->back()->with('error', 'Tidak dapat mengimpor data untuk periode yang sudah ditutup: ' . implode(', ', $closedPeriods));
+            }
+            
+            // Lanjutkan dengan import jika tidak ada periode yang ditutup
             Excel::import($import, $request->file('file'));
 
             // Cek jika ada error pada import
@@ -49,6 +92,15 @@ class AttendancesController extends Controller
     {
         try {
             $attendance = Attendances::findOrFail($id);
+            
+            // Check if the month is closed
+            $attendanceDate = \Carbon\Carbon::parse($attendance->waktu);
+            $isClosed = \App\Models\MonthClosing::isMonthClosed($attendanceDate->year, $attendanceDate->month);
+            
+            if ($isClosed) {
+                return redirect()->back()->with('error', 'Data kehadiran tidak dapat dihapus karena periode sudah ditutup.');
+            }
+            
             $attendance->delete();
             return redirect()->route('attendances.index')->with('success', 'Data kehadiran berhasil dihapus');
         } catch (\Exception $e) {

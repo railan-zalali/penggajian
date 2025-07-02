@@ -57,7 +57,7 @@ class PayrollHistoryController extends Controller
 
         $payroll->update($validated);
 
-        return redirect()->route('payroll.history')
+        return redirect()->route('payroll.history.index')
             ->with('success', 'Status pembayaran berhasil diperbarui.');
     }
 

@@ -3,18 +3,18 @@
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
     <div class="mb-4 text-center">
-        <h2 class="text-2xl font-bold text-gray-900">Login Administrator</h2>
-        <p class="text-sm text-gray-600 mt-2">Masuk menggunakan email dan password Anda</p>
+        <h2 class="text-2xl font-bold text-gray-900">Login Perangkat Desa</h2>
+        <p class="text-sm text-gray-600 mt-2">Masuk menggunakan NIK dan password Anda</p>
     </div>
 
-    <form method="POST" action="{{ route('login') }}">
+    <form method="POST" action="{{ route('perangkat.login') }}">
         @csrf
 
-        <!-- Email Address -->
+        <!-- NIK -->
         <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            <x-input-label for="nik" :value="__('NIK')" />
+            <x-text-input id="nik" class="block mt-1 w-full" type="text" name="nik" :value="old('nik')" required autofocus autocomplete="username" />
+            <x-input-error :messages="$errors->get('nik')" class="mt-2" />
         </div>
 
         <!-- Password -->
@@ -38,8 +38,8 @@
         </div>
 
         <div class="flex items-center justify-between mt-4">
-            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('perangkat.login') }}">
-                {{ __('Login sebagai Perangkat Desa') }}
+            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
+                {{ __('Login sebagai Admin') }}
             </a>
 
             <x-primary-button class="ms-3">

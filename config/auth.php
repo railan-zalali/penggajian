@@ -40,6 +40,10 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'perangkat' => [
+            'driver' => 'session',
+            'provider' => 'linmas',
+        ],
     ],
 
     /*
@@ -63,6 +67,10 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
+        ],
+        'linmas' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Linmas::class,
         ],
 
         // 'users' => [

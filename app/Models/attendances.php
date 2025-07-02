@@ -16,6 +16,11 @@ class Attendances extends Model
         'pengecualian',
     ];
 
+    // di model Attendance.php
+    protected $casts = [
+        'waktu' => 'datetime',
+    ];
+
     public function linmas()
     {
         return $this->belongsTo(Linmas::class, 'linmas_id');

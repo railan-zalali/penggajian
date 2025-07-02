@@ -81,7 +81,7 @@ class LinmasImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnEr
     {
         return [
             'nama' => 'required|string',
-            'nik' => 'required|string',
+            'nik' => 'required|numeric|digits:16|unique:linmas,nik',
             'tempat_lahir' => 'nullable|string',
             'tanggal_lahir' => 'nullable',
             'alamat' => 'nullable|string',

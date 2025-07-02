@@ -1,17 +1,32 @@
 <x-app-layout>
     <div class="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">Tutup Bulan Baru</h1>
-            <a href="{{ route('month-closing.index') }}"
-                class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition duration-300 flex items-center">
+            <h1 class="text-3xl font-bold text-gray-800">Daftar Tutup Bulan</h1>
+            <a href="{{ route('month-closing.create') }}"
+                class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-300 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd"
-                        d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                        d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
                         clip-rule="evenodd" />
                 </svg>
-                Kembali
+                Tutup Bulan Baru
             </a>
         </div>
+
+        @if (session('success'))
+            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded shadow" role="alert">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm">{{ session('success') }}</p>
+                    </div>
+                </div>
+            </div>
+        @endif
 
         @if (session('error'))
             <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow" role="alert">
@@ -33,10 +48,10 @@
 
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
             <div class="px-6 py-4 bg-indigo-600 text-white">
-                <h2 class="text-xl font-semibold">Form Tutup Bulan</h2>
+                <h2 class="text-xl font-semibold">Riwayat Tutup Bulan</h2>
             </div>
 
-            @if ($availablePeriods->isEmpty())
+            @if ($closings->isEmpty())
                 <div class="p-6">
                     <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
                         <div class="flex">
@@ -50,93 +65,90 @@
                             </div>
                             <div class="ml-3">
                                 <p class="text-sm text-yellow-700">
-                                    Tidak ada periode yang tersedia untuk ditutup. Pastikan Anda telah membuat data
-                                    penggajian terlebih dahulu.
+                                    Belum ada periode yang ditutup. Silakan buat tutup bulan baru.
                                 </p>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="mt-6 flex justify-center">
-                        <a href="{{ route('payroll.index') }}"
-                            class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow hover:bg-indigo-700 transition duration-300">
-                            Buat Penggajian Baru
-                        </a>
                     </div>
                 </div>
             @else
-                <form action="{{ route('month-closing.store') }}" method="POST" class="p-6">
-                    @csrf
-                    <div class="mb-6">
-                        <label for="period" class="block text-sm font-medium text-gray-700 mb-1">Pilih Periode</label>
-                        <select name="period" id="period"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                            required>
-                            <option value="">-- Pilih Periode --</option>
-                            @foreach ($availablePeriods as $period)
-                                <option value="{{ $period['value'] }}"
-                                    {{ old('period') == $period['value'] ? 'selected' : '' }}>
-                                    {{ $period['formatted'] }}
-                                </option>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Periode
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Tanggal Tutup
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Total Gaji
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Status
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Ditutup Oleh
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Aksi
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach ($closings as $closing)
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ $closing->formatted_period }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ $closing->closing_date->format('d M Y H:i') }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">Rp {{ number_format($closing->total_amount, 0, ',', '.') }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if ($closing->status == 'closed')
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                Ditutup
+                                            </span>
+                                        @else
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                Dibuka Kembali
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ $closing->user->name }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <div class="flex space-x-2">
+                                            <a href="{{ route('month-closing.show', $closing->id) }}"
+                                                class="text-indigo-600 hover:text-indigo-900">Detail</a>
+                                            
+                                            @if ($closing->status == 'closed')
+                                                <form action="{{ route('month-closing.reopen', $closing->id) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <button type="submit" class="text-yellow-600 hover:text-yellow-900"
+                                                        onclick="return confirm('Yakin ingin membuka kembali periode ini?')">Buka Kembali</button>
+                                                </form>
+                                            @endif
+                                            
+                                            <a href="{{ route('month-closing.generate-report', $closing->id) }}"
+                                                class="text-green-600 hover:text-green-900">Laporan</a>
+                                        </div>
+                                    </td>
+                                </tr>
                             @endforeach
-                        </select>
-                        <p class="mt-1 text-xs text-gray-500">Pilih periode yang akan ditutup. Hanya periode dengan data
-                            penggajian yang belum ditutup yang tersedia.</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Catatan
-                            (opsional)</label>
-                        <textarea name="notes" id="notes" rows="3"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">{{ old('notes') }}</textarea>
-                    </div>
-
-                    <div class="mb-6">
-                        <label class="flex items-center">
-                            <input type="checkbox" name="ignore_pending" value="1"
-                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                {{ old('ignore_pending') ? 'checked' : '' }}>
-                            <span class="ml-2 text-sm text-gray-700">Abaikan status pending</span>
-                        </label>
-                        <p class="mt-1 text-xs text-gray-500 ml-6">
-                            Centang ini jika Anda ingin menutup bulan meskipun masih ada gaji dengan status pending.
-                            <span class="text-red-500">Harap dicatat bahwa ini akan mempengaruhi laporan
-                                keuangan.</span>
-                        </p>
-                    </div>
-
-                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-                        <div class="flex">
-                            <div class="flex-shrink-0">
-                                <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd"
-                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                            <div class="ml-3">
-                                <p class="text-sm text-yellow-700">
-                                    <strong>Perhatian:</strong> Setelah bulan ditutup, data penggajian tidak dapat
-                                    diubah lagi. Pastikan semua data sudah benar sebelum melanjutkan.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end">
-                        <button type="submit"
-                            class="bg-indigo-600 text-white px-6 py-3 rounded-lg shadow hover:bg-indigo-700 transition duration-300 flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20"
-                                fill="currentColor">
-                                <path fill-rule="evenodd"
-                                    d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            Tutup Bulan
-                        </button>
-                    </div>
-                </form>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="px-6 py-4 bg-gray-50">
+                    {{ $closings->links() }}
+                </div>
             @endif
         </div>
 

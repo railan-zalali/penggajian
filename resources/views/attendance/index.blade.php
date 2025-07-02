@@ -12,6 +12,15 @@
                     </svg>
                     Download Template
                 </a>
+                <a href="{{ route('month-closing.index') }}"
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow hover:bg-indigo-700 transition duration-300 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                            clip-rule="evenodd" />
+                    </svg>
+                    Tutup Bulan
+                </a>
             </div>
         </div>
 
@@ -69,6 +78,7 @@
                             <th class="py-3 px-6 text-left">Status</th>
                             <th class="py-3 px-6 text-left">Status Baru</th>
                             <th class="py-3 px-6 text-left">Pengecualian</th>
+                            <th class="py-3 px-6 text-left">Status Tutup</th>
                             <th class="py-3 px-6 text-center">Aksi</th>
                         </tr>
                     </thead>
@@ -93,21 +103,49 @@
                                     @endif
                                 </td>
                                 <td class="py-3 px-6 text-left">{{ $attendance->pengecualian }}</td>
+                                <td class="py-3 px-6 text-left">
+                                    @php
+                                        $attendanceDate = \Carbon\Carbon::parse($attendance->waktu);
+                                        $isClosed = \App\Models\MonthClosing::isMonthClosed($attendanceDate->year, $attendanceDate->month);
+                                    @endphp
+                                    @if ($isClosed)
+                                        <span class="px-2 py-1 rounded-full text-xs bg-red-200 text-red-800">
+                                            Ditutup
+                                        </span>
+                                    @else
+                                        <span class="px-2 py-1 rounded-full text-xs bg-green-200 text-green-800">
+                                            Terbuka
+                                        </span>
+                                    @endif
+                                </td>
                                 <td class="py-3 px-6 text-center">
-                                    <form action="{{ route('attendances.destroy', $attendance->id) }}" method="POST"
-                                        onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                            class="bg-red-500 text-white px-3 py-1 rounded-lg shadow hover:bg-red-600 transition duration-300 ease-in-out transform hover:-translate-y-1">
+                                    @if ($isClosed)
+                                        <button type="button" disabled
+                                            class="bg-gray-400 text-white px-3 py-1 rounded-lg shadow cursor-not-allowed"
+                                            title="Data tidak dapat dihapus karena periode sudah ditutup">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20"
                                                 fill="currentColor">
                                                 <path fill-rule="evenodd"
-                                                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                                                    d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
                                                     clip-rule="evenodd" />
                                             </svg>
                                         </button>
-                                    </form>
+                                    @else
+                                        <form action="{{ route('attendances.destroy', $attendance->id) }}" method="POST"
+                                            onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                class="bg-red-500 text-white px-3 py-1 rounded-lg shadow hover:bg-red-600 transition duration-300 ease-in-out transform hover:-translate-y-1">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20"
+                                                    fill="currentColor">
+                                                    <path fill-rule="evenodd"
+                                                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                                                        clip-rule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach

@@ -42,6 +42,11 @@
                         {{ __('Tutup Bulan') }}
                     </x-nav-link>
                 </div>
+                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                    <x-nav-link :href="route('admin.linmas-login.index')" :active="request()->routeIs('admin.linmas-login.*')">
+                        {{ __('Akses Login') }}
+                    </x-nav-link>
+                </div>
 
                 <!-- Settings Dropdown in Navigation Bar -->
                 <div class="hidden sm:flex sm:items-center sm:ms-6">

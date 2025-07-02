@@ -6,7 +6,7 @@
 
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 class="text-xl font-semibold mb-4">Filter</h2>
-            <form action="{{ route('payroll.history') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <form action="{{ route('payroll.history.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                     <label for="month_year" class="block text-sm font-medium text-gray-700 mb-1">Bulan & Tahun</label>
                     <select name="month_year" id="month_year"
@@ -67,7 +67,7 @@
                 <h2 class="text-xl font-semibold">Laporan Bulanan</h2>
                 <p class="text-gray-600 mt-1">Download laporan gaji bulanan dalam format PDF</p>
 
-                <form action="{{ route('payroll.monthly-report') }}" method="POST"
+                <form action="{{ route('payroll.history.monthly-report') }}" method="POST"
                     class="mt-4 flex items-end space-x-4">
                     @csrf
                     <div>
@@ -375,7 +375,7 @@
             function openPaymentModal(payrollId) {
                 const modal = document.getElementById('paymentModal');
                 const form = document.getElementById('paymentStatusForm');
-                form.action = `/payroll/history/${payrollId}/status`;
+                form.action = `/payroll-history/${payrollId}/status`;
                 modal.classList.remove('hidden');
             }
 

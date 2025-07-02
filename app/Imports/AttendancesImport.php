@@ -41,7 +41,10 @@ class AttendancesImport implements ToModel, WithHeadingRow, WithValidation, Skip
                 $this->errors[] = "Perangkat Desa dengan nama '{$row['nama']}' tidak ditemukan";
                 return null;
             }
-            $formats = ['Y/m/d H:i', 'Y-m-d H:i', 'd/m/Y H:i', 'm/d/Y H:i'];
+            $formats = [
+                'Y-m-d H:i:s', 'Y/m/d H:i:s', 'd/m/Y H:i:s', 'm/d/Y H:i:s',
+                'Y-m-d H:i', 'Y/m/d H:i', 'd/m/Y H:i', 'm/d/Y H:i'
+            ];
             $waktu = null;
 
             // Parsing tanggal dengan validasi

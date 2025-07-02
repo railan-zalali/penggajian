@@ -3,6 +3,7 @@
 use App\Http\Controllers\AttendancesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LinmasController;
+use App\Http\Controllers\LinmasLoginController;
 use App\Http\Controllers\PayRateController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollHistoryController;
@@ -93,6 +94,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             'destroy' => 'rates.destroy'
         ]);
 
+
+
+        // Linmas Assignments
+        Route::get('allowances-deductions/linmas-assignments', [AllowanceDeductionController::class, 'linmasAssignments'])
+            ->name('allowances-deductions.linmas-assignments');
+        Route::get('allowances-deductions/linmas/{linmas}/assign', [AllowanceDeductionController::class, 'showAssignForm'])
+            ->name('allowances-deductions.assign');
+        Route::post('allowances-deductions/linmas/{linmas}/assign', [AllowanceDeductionController::class, 'saveAssignments'])
+            ->name('allowances-deductions.save-assignments');
         // Allowances & Deductions
         Route::resource('allowances-deductions', AllowanceDeductionController::class)->names([
             'index' => 'allowances-deductions.index',
@@ -102,14 +112,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             'update' => 'allowances-deductions.update',
             'destroy' => 'allowances-deductions.destroy'
         ]);
-
-        // Linmas Assignments
-        Route::get('allowances-deductions/linmas-assignments', [AllowanceDeductionController::class, 'linmasAssignments'])
-            ->name('allowances-deductions.linmas-assignments');
-        Route::get('allowances-deductions/linmas/{linmas}/assign', [AllowanceDeductionController::class, 'showAssignForm'])
-            ->name('allowances-deductions.assign');
-        Route::post('allowances-deductions/linmas/{linmas}/assign', [AllowanceDeductionController::class, 'saveAssignments'])
-            ->name('allowances-deductions.save-assignments');
     });
 
     // Payroll Workflow
@@ -119,15 +121,38 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/{payroll}', [PayrollWorkflowController::class, 'show'])->name('show');
         Route::put('/{payroll}/status', [PayrollWorkflowController::class, 'updateStatus'])->name('update-status');
     });
+
+    // Linmas Login Management
+    Route::prefix('admin/linmas-login')->name('admin.linmas-login.')->group(function () {
+        Route::get('/', [LinmasLoginController::class, 'index'])->name('index');
+        Route::get('/create/{linmas}', [LinmasLoginController::class, 'create'])->name('create');
+        Route::post('/store/{linmas}', [LinmasLoginController::class, 'store'])->name('store');
+        Route::get('/edit/{linmas}', [LinmasLoginController::class, 'edit'])->name('edit');
+        Route::put('/update/{linmas}', [LinmasLoginController::class, 'update'])->name('update');
+        Route::delete('/destroy/{linmas}', [LinmasLoginController::class, 'destroy'])->name('destroy');
+        Route::patch('/toggle/{linmas}', [LinmasLoginController::class, 'toggle'])->name('toggle');
+    });
 });
 
+// Rute Login Perangkat Desa
+Route::middleware('guest:perangkat')->group(function () {
+    Route::get('/perangkat/login', [App\Http\Controllers\Auth\PerangkatLoginController::class, 'showLoginForm'])->name('perangkat.login');
+    Route::post('/perangkat/login', [App\Http\Controllers\Auth\PerangkatLoginController::class, 'login']);
+});
+
+// Rute Logout Perangkat Desa
+Route::post('/perangkat/logout', [App\Http\Controllers\Auth\PerangkatLoginController::class, 'logout'])
+    ->middleware('auth:perangkat')
+    ->name('perangkat.logout');
+
 // Rute khusus Perangkat Desa
-Route::middleware(['auth', 'role:perangkat_desa'])->group(function () {
+Route::middleware('auth:perangkat')->group(function () {
     Route::get('/perangkat/dashboard', [PerangkatDashboardController::class, 'index'])->name('perangkat.dashboard');
     Route::get('/perangkat/profile', [PerangkatDashboardController::class, 'profile'])->name('perangkat.profile');
     Route::get('/perangkat/attendances', [PerangkatDashboardController::class, 'attendances'])->name('perangkat.attendances');
     Route::get('/perangkat/payrolls', [PerangkatDashboardController::class, 'payrolls'])->name('perangkat.payrolls');
     Route::get('/perangkat/payrolls/{payroll}', [PerangkatDashboardController::class, 'payrollDetail'])->name('perangkat.payroll-detail');
+    Route::get('/perangkat/month-closing', [PerangkatDashboardController::class, 'monthClosing'])->name('perangkat.month-closing');
 });
 
 require __DIR__ . '/auth.php';
