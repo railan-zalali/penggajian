@@ -15,9 +15,10 @@ class PayrollHistoryController extends Controller
         $query = Payroll::with('linmas');
 
         // Filter by month and year
-        if ($request->has('month') && $request->has('year')) {
-            $query->whereMonth('payroll_date', $request->month)
-                ->whereYear('payroll_date', $request->year);
+        if ($request->filled('month') && $request->filled('year')) {
+            $startOfMonth = Carbon::createFromDate($request->year, $request->month, 1)->startOfMonth();
+            $endOfMonth = $startOfMonth->copy()->endOfMonth();
+            $query->whereBetween('payroll_date', [$startOfMonth, $endOfMonth]);
         }
 
         // Filter by payment status
@@ -70,13 +71,14 @@ class PayrollHistoryController extends Controller
 
         $month = $request->month;
         $year = $request->year;
+        $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endOfMonth = $startOfMonth->copy()->endOfMonth();
 
         $payrolls = Payroll::with(['linmas', 'details'])
-            ->whereMonth('payroll_date', $month)
-            ->whereYear('payroll_date', $year)
+            ->whereBetween('payroll_date', [$startOfMonth, $endOfMonth])
             ->get();
 
-        $monthName = Carbon::createFromDate($year, $month, 1)->format('F');
+        $monthName = $startOfMonth->format('F');
 
         $totalPaid = $payrolls->where('payment_status', 'paid')->sum('total_salary');
         $totalPending = $payrolls->where('payment_status', 'pending')->sum('total_salary');

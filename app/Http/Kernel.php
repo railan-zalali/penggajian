@@ -66,5 +66,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'role' => \App\Http\Middleware\CheckRole::class,
         'linmas.can_login' => \App\Http\Middleware\EnsureLinmasCanLogin::class,
+        'perangkat.active' => \App\Http\Middleware\EnsurePerangkatIsActive::class,
     ];
 }

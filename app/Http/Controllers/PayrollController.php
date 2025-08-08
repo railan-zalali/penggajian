@@ -10,6 +10,7 @@ use App\Models\SalaryRate;
 use App\Models\AllowanceDeductionType;
 use App\Models\LinmasAllowanceDeduction;
 use App\Models\PositionSalaryRate;
+use App\Services\PayrollCalculationService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -19,6 +20,13 @@ use Illuminate\Support\Facades\Validator;
 
 class PayrollController extends Controller
 {
+    protected $payrollCalculationService;
+
+    public function __construct(PayrollCalculationService $payrollCalculationService)
+    {
+        $this->payrollCalculationService = $payrollCalculationService;
+    }
+
     public function index()
     {
         return view('payroll.index');
@@ -40,276 +48,7 @@ class PayrollController extends Controller
         $startDate = Carbon::parse($request->start_month)->startOfMonth();
         $endDate = Carbon::parse($request->end_month)->endOfMonth();
 
-        // Mengambil data kehadiran dalam rentang waktu
-        $attendances = Attendances::whereBetween('waktu', [$startDate, $endDate])
-            ->with('linmas')
-            ->get();
-
-        // Mendapatkan rate lembur dari database
-        $overtimeRate = SalaryRate::where('key', 'overtime_rate')->where('is_active', true)->first()->value ?? 10000;
-
-        // Mengelompokkan kehadiran berdasarkan NIK
-        $payrollData = $attendances->groupBy('linmas.nik')->map(function ($attendanceGroup) use ($overtimeRate) {
-            // Jika tidak ada data linmas, lewati
-            if (!$attendanceGroup->first() || !$attendanceGroup->first()->linmas) {
-                \Illuminate\Support\Facades\Log::warning("Skipping attendance group without linmas data");
-                return null;
-            }
-
-            $linmas = $attendanceGroup->first()->linmas;
-            $linmasId = $linmas->id;
-
-            // Hitung hari kerja dan lembur dengan metode yang lebih efisien dan robust
-            // Menggunakan array asosiatif untuk tracking hari kerja dan lembur
-            $daysWorkedMap = [];
-            $overtimeDaysMap = [];
-
-            // Kelompokkan kehadiran berdasarkan tanggal untuk pemrosesan lebih cepat
-            $attendancesByDate = $attendanceGroup->groupBy(function ($attendance) {
-                return date('Y-m-d', strtotime($attendance->waktu));
-            });
-
-            // Log untuk debugging
-            \Illuminate\Support\Facades\Log::info("Processing attendance for NIK: {$linmas->nik}", [
-                'dates_count' => count($attendancesByDate),
-                'total_records' => $attendanceGroup->count()
-            ]);
-
-            // Proses setiap tanggal untuk mencari pasangan masuk-keluar
-            foreach ($attendancesByDate as $date => $dailyAttendances) {
-                // Cek kehadiran reguler (C/Masuk dan C/Keluar)
-                $hasEntry = $dailyAttendances->where('status', 'C/Masuk')->count() > 0;
-                $hasExit = $dailyAttendances->where('status', 'C/Keluar')->count() > 0;
-
-                // Cek juga status alternatif yang mungkin digunakan
-                if (!$hasEntry) {
-                    $hasEntry = $dailyAttendances->where('status', 'Masuk')->count() > 0 ||
-                        $dailyAttendances->where('status_baru', 'C/Masuk')->count() > 0 ||
-                        $dailyAttendances->where('status_baru', 'Masuk')->count() > 0;
-                }
-
-                if (!$hasExit) {
-                    $hasExit = $dailyAttendances->where('status', 'Keluar')->count() > 0 ||
-                        $dailyAttendances->where('status_baru', 'C/Keluar')->count() > 0 ||
-                        $dailyAttendances->where('status_baru', 'Keluar')->count() > 0;
-                }
-
-                // Hanya hitung hari dengan pasangan masuk dan keluar
-                if ($hasEntry && $hasExit && !isset($daysWorkedMap[$date])) {
-                    $daysWorkedMap[$date] = true;
-                    \Illuminate\Support\Facades\Log::debug("Counted work day for {$linmas->nik} on {$date}");
-                }
-
-                // Cek lembur (Lembur Masuk dan Lembur Keluar)
-                $hasOvertimeEntry = $dailyAttendances->where('status', 'Lembur Masuk')->count() > 0;
-                $hasOvertimeExit = $dailyAttendances->where('status', 'Lembur Keluar')->count() > 0;
-
-                // Jika tidak ada status lembur di status utama, cek di status_baru
-                if (!$hasOvertimeEntry) {
-                    $hasOvertimeEntry = $dailyAttendances->where('status_baru', 'Lembur Masuk')->count() > 0;
-                }
-
-                if (!$hasOvertimeExit) {
-                    $hasOvertimeExit = $dailyAttendances->where('status_baru', 'Lembur Keluar')->count() > 0;
-                }
-
-                // Hanya hitung hari dengan pasangan lembur masuk dan keluar
-                if ($hasOvertimeEntry && $hasOvertimeExit && !isset($overtimeDaysMap[$date])) {
-                    $overtimeDaysMap[$date] = true;
-                    \Illuminate\Support\Facades\Log::debug("Counted overtime for {$linmas->nik} on {$date}");
-                }
-            }
-
-            $totalDaysWorked = count($daysWorkedMap);
-            $totalOvertime = count($overtimeDaysMap);
-
-            // Mendapatkan jabatan linmas
-            $position = $linmas->jabatan ?? 'Perangkat Lainnya';
-
-            // Mendapatkan tarif harian berdasarkan jabatan
-            $positionRate = PositionSalaryRate::where('position', $position)
-                ->where('is_active', true)
-                ->first();
-
-            // Log untuk debugging
-            \Illuminate\Support\Facades\Log::info("Position rate for {$position}", [
-                'position' => $position,
-                'found_rate' => $positionRate ? $positionRate->daily_rate : 'not found'
-            ]);
-
-            // Jika jabatan tidak ditemukan, gunakan tarif default untuk Perangkat Lainnya
-            if (!$positionRate) {
-                $positionRate = PositionSalaryRate::where('position', 'Perangkat Lainnya')
-                    ->where('is_active', true)
-                    ->first();
-
-                // Log jika menggunakan tarif default
-                if ($positionRate) {
-                    \Illuminate\Support\Facades\Log::info("Using default rate for Perangkat Lainnya", [
-                        'daily_rate' => $positionRate->daily_rate
-                    ]);
-                }
-            }
-
-            // Mendapatkan tarif harian
-            $dailyRate = $positionRate ? $positionRate->daily_rate : 100000; // Default 100.000 jika tidak ada tarif
-
-            // Mendapatkan tarif lembur yang valid
-            if (!$overtimeRate || $overtimeRate <= 0) {
-                $overtimeRate = 10000; // Default 10.000 jika tidak ada tarif lembur yang valid
-                \Illuminate\Support\Facades\Log::warning("Using default overtime rate: 10000");
-            }
-
-            // Hitung gaji pokok dan lembur
-            $baseSalary = $totalDaysWorked * $dailyRate;
-            $overtimePay = $totalOvertime * $overtimeRate;
-
-            // Log hasil perhitungan dasar
-            \Illuminate\Support\Facades\Log::info("Base calculation for {$linmas->nik}", [
-                'total_days_worked' => $totalDaysWorked,
-                'daily_rate' => $dailyRate,
-                'base_salary' => $baseSalary,
-                'total_overtime' => $totalOvertime,
-                'overtime_rate' => $overtimeRate,
-                'overtime_pay' => $overtimePay
-            ]);
-
-            // Ambil data tunjangan dan potongan
-            $allowances = LinmasAllowanceDeduction::getLinmasAllowances($linmasId);
-            $deductions = LinmasAllowanceDeduction::getLinmasDeductions($linmasId);
-
-            // Hitung total tunjangan dengan metode yang lebih efisien
-            $totalAllowances = 0;
-            $allowanceDetails = [];
-            $totalSalaryBeforeDeductions = $baseSalary + $overtimePay; // Gaji dasar untuk perhitungan persentase
-
-            // Proses tunjangan tetap terlebih dahulu
-            foreach ($allowances->where('type.calculation_type', 'fixed') as $allowance) {
-                if (!$allowance->type) {
-                    \Illuminate\Support\Facades\Log::warning("Allowance type not found for allowance ID: {$allowance->id}");
-                    continue;
-                }
-
-                $allowanceType = $allowance->type;
-                $amount = max(0, $allowance->value); // Pastikan nilai tunjangan tidak negatif
-
-                $totalAllowances += $amount;
-                $allowanceDetails[] = [
-                    'name' => $allowanceType->name,
-                    'code' => $allowanceType->code,
-                    'amount' => $amount,
-                    'type' => 'fixed'
-                ];
-            }
-
-            // Kemudian proses tunjangan persentase
-            foreach ($allowances->where('type.calculation_type', 'percentage') as $allowance) {
-                if (!$allowance->type) {
-                    \Illuminate\Support\Facades\Log::warning("Allowance type not found for allowance ID: {$allowance->id}");
-                    continue;
-                }
-
-                $allowanceType = $allowance->type;
-                $amount = floor(($allowance->value / 100) * $totalSalaryBeforeDeductions); // Pembulatan ke bawah
-                $amount = max(0, $amount); // Pastikan nilai tunjangan tidak negatif
-
-                $totalAllowances += $amount;
-                $allowanceDetails[] = [
-                    'name' => $allowanceType->name,
-                    'code' => $allowanceType->code,
-                    'amount' => $amount,
-                    'type' => 'percentage',
-                    'percentage' => $allowance->value . '%'
-                ];
-            }
-
-            // Hitung total potongan dengan metode yang lebih efisien
-            $totalDeductions = 0;
-            $deductionDetails = [];
-            $totalAvailableSalary = $totalSalaryBeforeDeductions + $totalAllowances; // Total yang tersedia untuk dipotong
-
-            // Proses potongan tetap terlebih dahulu
-            foreach ($deductions->where('type.calculation_type', 'fixed') as $deduction) {
-                if (!$deduction->type) {
-                    \Illuminate\Support\Facades\Log::warning("Deduction type not found for deduction ID: {$deduction->id}");
-                    continue;
-                }
-
-                $deductionType = $deduction->type;
-                $amount = max(0, $deduction->value); // Pastikan nilai potongan tidak negatif
-
-                // Pastikan potongan tidak melebihi sisa gaji yang tersedia
-                $remainingSalary = $totalAvailableSalary - $totalDeductions;
-                $amount = min($amount, $remainingSalary);
-
-                if ($amount > 0) { // Hanya tambahkan jika nilainya positif
-                    $totalDeductions += $amount;
-                    $deductionDetails[] = [
-                        'name' => $deductionType->name,
-                        'code' => $deductionType->code,
-                        'amount' => $amount,
-                        'type' => 'fixed'
-                    ];
-                }
-            }
-
-            // Kemudian proses potongan persentase
-            foreach ($deductions->where('type.calculation_type', 'percentage') as $deduction) {
-                if (!$deduction->type) {
-                    \Illuminate\Support\Facades\Log::warning("Deduction type not found for deduction ID: {$deduction->id}");
-                    continue;
-                }
-
-                $deductionType = $deduction->type;
-                $amount = floor(($deduction->value / 100) * $totalSalaryBeforeDeductions); // Pembulatan ke bawah
-                $amount = max(0, $amount); // Pastikan nilai potongan tidak negatif
-
-                // Pastikan potongan tidak melebihi sisa gaji yang tersedia
-                $remainingSalary = $totalAvailableSalary - $totalDeductions;
-                $amount = min($amount, $remainingSalary);
-
-                if ($amount > 0) { // Hanya tambahkan jika nilainya positif
-                    $totalDeductions += $amount;
-                    $deductionDetails[] = [
-                        'name' => $deductionType->name,
-                        'code' => $deductionType->code,
-                        'amount' => $amount,
-                        'type' => 'percentage',
-                        'percentage' => $deduction->value . '%'
-                    ];
-                }
-            }
-
-            // Hitung total gaji
-            $totalSalary = $baseSalary + $overtimePay + $totalAllowances - $totalDeductions;
-
-            // Pastikan total gaji tidak negatif
-            $totalSalary = max(0, $totalSalary);
-
-            // Log hasil akhir perhitungan
-            \Illuminate\Support\Facades\Log::info("Final calculation for {$linmas->nik}", [
-                'base_salary' => $baseSalary,
-                'overtime_pay' => $overtimePay,
-                'total_allowances' => $totalAllowances,
-                'total_deductions' => $totalDeductions,
-                'total_salary' => $totalSalary
-            ]);
-
-            return [
-                'nik' => $linmas->nik,
-                'nama' => $linmas->nama,
-                'linmas_id' => $linmasId,
-                'total_days_worked' => $totalDaysWorked,
-                'total_overtime' => $totalOvertime,
-                'base_salary' => $baseSalary,
-                'overtime_payment' => $overtimePay,
-                'allowances' => $allowanceDetails,
-                'total_allowances' => $totalAllowances,
-                'deductions' => $deductionDetails,
-                'total_deductions' => $totalDeductions,
-                'total_wage' => $totalSalary
-            ];
-        })->filter()->values();
+        $payrollData = $this->payrollCalculationService->calculate($startDate, $endDate);
 
         return view('payroll.index', compact('payrollData', 'startDate', 'endDate'));
     }
@@ -403,6 +142,10 @@ class PayrollController extends Controller
                         ->first();
 
                     if ($payroll) {
+                        // Get rates
+                        $overtimeRate = SalaryRate::where('key', 'overtime_rate')->where('is_active', true)->first()->value ?? 10000;
+                        $dailyRate = $payroll->total_days_present > 0 ? ($payroll->base_salary / $payroll->total_days_present) : 0;
+
                         // Format data untuk slip gaji
                         $payrollData = [
                             'nik' => $linmas->nik,
@@ -416,6 +159,8 @@ class PayrollController extends Controller
                             'deductions' => [],
                             'total_allowances' => 0,
                             'total_deductions' => 0,
+                            'daily_rate' => $dailyRate,
+                            'overtime_rate' => $overtimeRate,
                         ];
 
                         // Tambahkan detail tunjangan dan potongan
@@ -435,8 +180,6 @@ class PayrollController extends Controller
                                 ];
                                 $payrollData['total_deductions'] += $amount;
                             } elseif ($detail->type == 'overtime') {
-                                // Pastikan rate lembur valid
-                                $overtimeRate = SalaryRate::where('key', 'overtime_rate')->where('is_active', true)->first()->value ?? 10000;
                                 $payrollData['total_overtime'] = $overtimeRate > 0 ? $detail->amount / $overtimeRate : 0;
                             }
                         }

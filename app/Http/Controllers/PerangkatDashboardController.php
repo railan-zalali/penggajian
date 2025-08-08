@@ -11,20 +11,9 @@ use Carbon\Carbon;
 
 class PerangkatDashboardController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:perangkat');
-    }
-
     public function index()
     {
         $linmas = Auth::guard('perangkat')->user();
-
-        if (!$linmas || !$linmas->can_login) {
-            Auth::guard('perangkat')->logout();
-            return redirect()->route('perangkat.login')
-                ->withErrors(['error' => 'Akses ditolak. Hubungi administrator.']);
-        }
 
         // Ambil data kehadiran
         $attendances = Attendances::where('linmas_id', $linmas->id)
@@ -37,9 +26,10 @@ class PerangkatDashboardController extends Controller
             ->paginate(5);
 
         // Statistik kehadiran bulan ini
+        $startOfMonth = now()->startOfMonth();
+        $endOfMonth = now()->endOfMonth();
         $attendanceThisMonth = Attendances::where('linmas_id', $linmas->id)
-            ->whereMonth('waktu', now()->month)
-            ->whereYear('waktu', now()->year)
+            ->whereBetween('waktu', [$startOfMonth, $endOfMonth])
             ->count();
 
         return view('perangkat.dashboard', compact(
@@ -53,38 +43,8 @@ class PerangkatDashboardController extends Controller
     public function profile()
     {
         $linmas = Auth::guard('perangkat')->user();
-
-        if (!$linmas || !$linmas->can_login) {
-            Auth::guard('perangkat')->logout();
-            return redirect()->route('perangkat.login')
-                ->withErrors(['error' => 'Akses ditolak. Hubungi administrator.']);
-        }
-
-        // Statistik kehadiran
-        $attendanceStats = [
-            'total' => Attendances::where('linmas_id', $linmas->id)->count(),
-            'thisMonth' => Attendances::where('linmas_id', $linmas->id)
-                ->whereMonth('waktu', now()->month)
-                ->whereYear('waktu', now()->year)
-                ->count(),
-            'thisWeek' => Attendances::where('linmas_id', $linmas->id)
-                ->whereBetween('waktu', [now()->startOfWeek(), now()->endOfWeek()])
-                ->count(),
-        ];
-
-        // Statistik gaji
-        $payrollStats = [
-            'totalReceived' => Payroll::where('linmas_id', $linmas->id)
-                ->where('payment_status', 'paid')
-                ->sum('total_salary'),
-            'lastPayroll' => Payroll::where('linmas_id', $linmas->id)
-                ->orderBy('payroll_date', 'desc')
-                ->first(),
-            'pending' => Payroll::where('linmas_id', $linmas->id)
-                ->where('payment_status', 'pending')
-                ->count(),
-            'totalPeriods' => Payroll::where('linmas_id', $linmas->id)->count(),
-        ];
+        $attendanceStats = $this->getAttendanceStats($linmas->id);
+        $payrollStats = $this->getPayrollStats($linmas->id);
 
         return view('perangkat.profile', compact('linmas', 'attendanceStats', 'payrollStats'));
     }
@@ -92,31 +52,11 @@ class PerangkatDashboardController extends Controller
     public function attendances()
     {
         $linmas = Auth::guard('perangkat')->user();
-
-        if (!$linmas || !$linmas->can_login) {
-            Auth::guard('perangkat')->logout();
-            return redirect()->route('perangkat.login')
-                ->withErrors(['error' => 'Akses ditolak. Hubungi administrator.']);
-        }
-
         $attendances = Attendances::where('linmas_id', $linmas->id)
             ->orderBy('waktu', 'desc')
             ->paginate(15);
 
-        // Statistik kehadiran
-        $attendanceStats = [
-            'total' => Attendances::where('linmas_id', $linmas->id)->count(),
-            'thisMonth' => Attendances::where('linmas_id', $linmas->id)
-                ->whereMonth('waktu', now()->month)
-                ->whereYear('waktu', now()->year)
-                ->count(),
-            'thisWeek' => Attendances::where('linmas_id', $linmas->id)
-                ->whereBetween('waktu', [now()->startOfWeek(), now()->endOfWeek()])
-                ->count(),
-            'today' => Attendances::where('linmas_id', $linmas->id)
-                ->whereDate('waktu', now()->toDateString())
-                ->count(),
-        ];
+        $attendanceStats = $this->getAttendanceStats($linmas->id, true);
 
         return view('perangkat.attendances', compact('attendances', 'linmas', 'attendanceStats'));
     }
@@ -124,30 +64,11 @@ class PerangkatDashboardController extends Controller
     public function payrolls()
     {
         $linmas = Auth::guard('perangkat')->user();
-
-        if (!$linmas || !$linmas->can_login) {
-            Auth::guard('perangkat')->logout();
-            return redirect()->route('perangkat.login')
-                ->withErrors(['error' => 'Akses ditolak. Hubungi administrator.']);
-        }
-
         $payrolls = Payroll::where('linmas_id', $linmas->id)
             ->orderBy('payroll_date', 'desc')
             ->paginate(10);
 
-        // Statistik gaji
-        $payrollStats = [
-            'totalReceived' => Payroll::where('linmas_id', $linmas->id)
-                ->where('payment_status', 'paid')
-                ->sum('total_salary'),
-            'lastPayroll' => Payroll::where('linmas_id', $linmas->id)
-                ->orderBy('payroll_date', 'desc')
-                ->first(),
-            'pending' => Payroll::where('linmas_id', $linmas->id)
-                ->where('payment_status', 'pending')
-                ->count(),
-            'totalPeriods' => Payroll::where('linmas_id', $linmas->id)->count(),
-        ];
+        $payrollStats = $this->getPayrollStats($linmas->id);
 
         return view('perangkat.payrolls', compact('payrolls', 'linmas', 'payrollStats'));
     }
@@ -156,6 +77,7 @@ class PerangkatDashboardController extends Controller
     {
         $linmas = Auth::guard('perangkat')->user();
 
+        // This authorization check is specific and should remain.
         if ($payroll->linmas_id !== $linmas->id) {
             abort(403, 'Unauthorized action.');
         }
@@ -168,12 +90,6 @@ class PerangkatDashboardController extends Controller
     public function monthClosing()
     {
         $linmas = Auth::guard('perangkat')->user();
-
-        if (!$linmas || !$linmas->can_login) {
-            Auth::guard('perangkat')->logout();
-            return redirect()->route('perangkat.login')
-                ->withErrors(['error' => 'Akses ditolak. Hubungi administrator.']);
-        }
 
         // Ambil semua month closing
         $monthClosings = MonthClosing::with('createdBy')
@@ -201,8 +117,9 @@ class PerangkatDashboardController extends Controller
         }
 
         // Cek apakah ada payroll untuk periode tersebut yang belum ditutup
-        $hasUnprocessedPayroll = Payroll::whereYear('payroll_date', $nextMonth->year)
-            ->whereMonth('payroll_date', $nextMonth->month)
+        $startOfNextMonth = $nextMonth->copy()->startOfMonth();
+        $endOfNextMonth = $nextMonth->copy()->endOfMonth();
+        $hasUnprocessedPayroll = Payroll::whereBetween('payroll_date', [$startOfNextMonth, $endOfNextMonth])
             ->whereNull('month_closing_id')
             ->whereIn('payment_status', ['paid', 'pending'])
             ->exists();
@@ -218,5 +135,61 @@ class PerangkatDashboardController extends Controller
             'canCreateNew',
             'nextPeriod'
         ));
+    }
+
+    /**
+     * Get attendance statistics for a given linmas ID.
+     *
+     * @param int $linmasId
+     * @param bool $includeToday
+     * @return array
+     */
+    private function getAttendanceStats(int $linmasId, bool $includeToday = false): array
+    {
+        $now = now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $endOfMonth = $now->copy()->endOfMonth();
+        $startOfWeek = $now->copy()->startOfWeek();
+        $endOfWeek = $now->copy()->endOfWeek();
+
+        $stats = [
+            'total' => Attendances::where('linmas_id', $linmasId)->count(),
+            'thisMonth' => Attendances::where('linmas_id', $linmasId)
+                ->whereBetween('waktu', [$startOfMonth, $endOfMonth])
+                ->count(),
+            'thisWeek' => Attendances::where('linmas_id', $linmasId)
+                ->whereBetween('waktu', [$startOfWeek, $endOfWeek])
+                ->count(),
+        ];
+
+        if ($includeToday) {
+            $stats['today'] = Attendances::where('linmas_id', $linmasId)
+                ->whereDate('waktu', $now->toDateString())
+                ->count();
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Get payroll statistics for a given linmas ID.
+     *
+     * @param int $linmasId
+     * @return array
+     */
+    private function getPayrollStats(int $linmasId): array
+    {
+        return [
+            'totalReceived' => Payroll::where('linmas_id', $linmasId)
+                ->where('payment_status', 'paid')
+                ->sum('total_salary'),
+            'lastPayroll' => Payroll::where('linmas_id', $linmasId)
+                ->orderBy('payroll_date', 'desc')
+                ->first(),
+            'pending' => Payroll::where('linmas_id', $linmasId)
+                ->where('payment_status', 'pending')
+                ->count(),
+            'totalPeriods' => Payroll::where('linmas_id', $linmasId)->count(),
+        ];
     }
 }

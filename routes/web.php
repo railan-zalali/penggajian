@@ -152,7 +152,7 @@ Route::post('/perangkat/logout', [App\Http\Controllers\Auth\PerangkatLoginContro
     ->name('perangkat.logout');
 
 // Rute khusus Perangkat Desa
-Route::middleware('auth:perangkat')->group(function () {
+Route::middleware(['auth:perangkat', 'perangkat.active'])->group(function () {
     Route::get('/perangkat/dashboard', [PerangkatDashboardController::class, 'index'])->name('perangkat.dashboard');
     Route::get('/perangkat/profile', [PerangkatDashboardController::class, 'profile'])->name('perangkat.profile');
     Route::get('/perangkat/attendances', [PerangkatDashboardController::class, 'attendances'])->name('perangkat.attendances');

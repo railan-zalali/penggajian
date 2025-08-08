@@ -15,15 +15,15 @@ class DashboardController extends Controller
     public function index()
     {
         // Metrik Dasar
+        $now = Carbon::now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $endOfMonth = $now->copy()->endOfMonth();
+
         $totalLinmas = Linmas::count();
-        $attendanceThisMonth = Attendances::whereMonth('waktu', Carbon::now()->month)
-            ->whereYear('waktu', Carbon::now()->year)
-            ->count();
+        $attendanceThisMonth = Attendances::whereBetween('waktu', [$startOfMonth, $endOfMonth])->count();
         $totalSalary = Payroll::where('payment_status', 'paid')->sum('total_salary');
 
         // Hitung hari kerja dalam bulan ini (tidak termasuk Sabtu dan Minggu)
-        $startOfMonth = Carbon::now()->startOfMonth();
-        $endOfMonth = Carbon::now()->endOfMonth();
         $workingDays = CarbonPeriod::create($startOfMonth, $endOfMonth)
             ->filter(function ($date) {
                 return !$date->isWeekend();
@@ -38,8 +38,9 @@ class DashboardController extends Controller
             ->get();
 
         // Data Kehadiran per bulan (6 bulan terakhir)
+        $sixMonthsAgo = $now->copy()->subMonths(5)->startOfMonth();
         $attendanceData = attendances::selectRaw('MONTH(waktu) as month, YEAR(waktu) as year, COUNT(*) as attendance, SUM(CASE WHEN status = "C/Masuk" THEN 1 ELSE 0 END) as overtime')
-            ->whereRaw('DATE(waktu) >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)')
+            ->where('waktu', '>=', $sixMonthsAgo)
             ->groupBy('year', 'month')
             ->orderBy('year')
             ->orderBy('month')

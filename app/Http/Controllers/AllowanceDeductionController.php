@@ -128,9 +128,21 @@ class AllowanceDeductionController extends Controller
     /**
      * Show linmas assignments page
      */
-    public function linmasAssignments()
+    public function linmasAssignments(Request $request)
     {
-        $linmasMembers = Linmas::all();
+        $query = Linmas::query();
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%");
+            });
+        }
+
+        $linmasMembers = $query->orderBy('nama')->paginate(20);
+
         return view('settings.allowances-deductions.linmas-assignments', compact('linmasMembers'));
     }
 

@@ -235,7 +235,7 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td>Gaji Pokok ({{ $payrollData['total_days_worked'] }} hari kerja @ Rp 75.114)</td>
+                        <td>Gaji Pokok ({{ $payrollData['total_days_worked'] }} hari kerja @ Rp {{ number_format($payrollData['daily_rate'] ?? 0, 0, ',', '.') }})</td>
                         <td class="amount">Rp
                             {{ number_format($payrollData['base_salary'], 0, ',', '.') }}</td>
                     </tr>
@@ -260,7 +260,7 @@
                     @endif
 
                     <tr>
-                        <td>Lembur ({{ $payrollData['total_overtime'] }} jam @ Rp 10.000)</td>
+                        <td>Lembur ({{ $payrollData['total_overtime'] }} jam @ Rp {{ number_format($payrollData['overtime_rate'] ?? 0, 0, ',', '.') }})</td>
                         <td class="amount">Rp {{ number_format($payrollData['overtime_payment'], 0, ',', '.') }}
                         </td>
                     </tr>

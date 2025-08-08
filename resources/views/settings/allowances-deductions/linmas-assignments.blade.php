@@ -38,14 +38,20 @@
             </div>
 
             <div class="p-6">
-                <div class="mb-4">
-                    <input type="text" id="searchInput"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        placeholder="Cari perangkat desa berdasarkan nama atau NIK...">
-                </div>
+                <form action="{{ route('settings.allowances-deductions.linmas-assignments') }}" method="GET" class="mb-4">
+                    <div class="flex items-center">
+                        <input type="text" name="search"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Cari perangkat desa berdasarkan nama atau NIK..." value="{{ request('search') }}">
+                        <button type="submit"
+                            class="bg-indigo-600 text-white px-4 py-2 rounded-r-lg hover:bg-indigo-700 transition duration-300">
+                            Cari
+                        </button>
+                    </div>
+                </form>
 
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200" id="linmasTable">
+                    <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th scope="col"
@@ -84,12 +90,15 @@
                             @empty
                                 <tr>
                                     <td colspan="4" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">
-                                        Tidak ada data perangkat desa
+                                        Tidak ada data perangkat desa ditemukan.
                                     </td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+                <div class="mt-4">
+                    {{ $linmasMembers->links() }}
                 </div>
             </div>
         </div>
@@ -110,27 +119,4 @@
             </div>
         </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('searchInput');
-            const table = document.getElementById('linmasTable');
-            const rows = table.querySelectorAll('tbody tr');
-
-            searchInput.addEventListener('keyup', function(e) {
-                const searchValue = e.target.value.toLowerCase();
-
-                rows.forEach(row => {
-                    const nik = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
-                    const name = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-
-                    if (nik.includes(searchValue) || name.includes(searchValue)) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-            });
-        });
-    </script>
 </x-app-layout>
