@@ -12,8 +12,7 @@ class Attendances extends Model
         'linmas_id',
         'waktu',
         'status',
-        'status_baru',
-        'pengecualian',
+        // Kolom status_baru dan pengecualian dihapus sesuai kebutuhan
     ];
 
     // di model Attendance.php

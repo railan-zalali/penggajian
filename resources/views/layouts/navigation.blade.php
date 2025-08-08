@@ -8,7 +8,7 @@
                     <a href="{{ route('dashboard') }}">
                         <x-application-logo class="block h-14 w-auto fill-current text-gray-800" />
                     </a>
-                    <h1 class="text-xs font-bold">KECAMATAN KIARACONDONG</h1>
+                    <h1 class="text-xs font-bold ml-3"> DESA CISEWU </h1>
                 </div>
 
                 <!-- Navigation Links -->
@@ -73,7 +73,11 @@
                             <div class="rounded-md ring-1 ring-black ring-opacity-5 py-1 bg-white">
                                 <a href="{{ route('settings.rates.index') }}"
                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('settings.rates.*') ? 'bg-gray-100' : '' }}">
-                                    Tarif
+                                    Tarif Dasar
+                                </a>
+                                <a href="{{ route('settings.position-rates.index') }}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('settings.position-rates.*') ? 'bg-gray-100' : '' }}">
+                                    Tarif Jabatan
                                 </a>
                                 <a href="{{ route('settings.allowances-deductions.index') }}"
                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('settings.allowances-deductions.*') ? 'bg-gray-100' : '' }}">
@@ -176,7 +180,10 @@
                 </div>
                 <div x-show="settingsOpen" class="pl-5 space-y-1">
                     <x-responsive-nav-link :href="route('settings.rates.index')" :active="request()->routeIs('settings.rates.*')">
-                        {{ __('Tarif') }}
+                        {{ __('Tarif Dasar') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('settings.position-rates.index')" :active="request()->routeIs('settings.position-rates.*')">
+                        {{ __('Tarif Jabatan') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('settings.allowances-deductions.index')" :active="request()->routeIs('settings.allowances-deductions.*')">
                         {{ __('Tunjangan & Potongan') }}

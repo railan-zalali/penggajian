@@ -37,9 +37,11 @@ class AttendancesController extends Controller
             $closedPeriods = [];
             
             foreach ($data as $index => $row) {
-                if ($index === 0) continue; // Skip header row
+                if ($index === 0 || $index === 1) continue; // Skip header row dan baris petunjuk
                 
-                if (isset($row[3]) && !empty($row[3])) { // Kolom waktu
+                // Kolom waktu (indeks 3 untuk format: No, NIK, Nama, Waktu, Status)
+                // Format data: [0]=No, [1]=NIK, [2]=Nama, [3]=Waktu, [4]=Status
+                if (isset($row[3]) && !empty($row[3])) {
                     try {
                         $date = \Carbon\Carbon::parse($row[3]);
                         $year = $date->year;

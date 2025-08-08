@@ -225,7 +225,7 @@
                             <td>{{ $payroll->linmas->nik ?? 'N/A' }}</td>
                             <td>{{ $payroll->linmas->nama ?? 'N/A' }}</td>
                             <td>{{ $payroll->total_days_present }}</td>
-                            <td>{{ number_format($payroll->overtime_payment / 10000) }} jam</td>
+                            <td>{{ $payroll->details->where('type', 'overtime')->first() ? number_format($payroll->details->where('type', 'overtime')->first()->amount / 10000) : number_format($payroll->overtime_payment / 10000) }} jam</td>
                             <td>Rp {{ number_format($payroll->base_salary, 0, ',', '.') }}</td>
                             <td>Rp {{ number_format($payroll->overtime_payment, 0, ',', '.') }}</td>
                             <td>Rp {{ number_format($payroll->total_salary, 0, ',', '.') }}</td>

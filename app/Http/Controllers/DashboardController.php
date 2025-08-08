@@ -38,12 +38,14 @@ class DashboardController extends Controller
             ->get();
 
         // Data Kehadiran per bulan (6 bulan terakhir)
-        $attendanceData = attendances::selectRaw('MONTH(waktu) as month, YEAR(waktu) as year, COUNT(*) as attendance, SUM(CASE WHEN status_baru = "Lembur Masuk" THEN 1 ELSE 0 END) as overtime')
+        $attendanceData = attendances::selectRaw('MONTH(waktu) as month, YEAR(waktu) as year, COUNT(*) as attendance, SUM(CASE WHEN status = "C/Masuk" THEN 1 ELSE 0 END) as overtime')
             ->whereRaw('DATE(waktu) >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)')
             ->groupBy('year', 'month')
             ->orderBy('year')
             ->orderBy('month')
             ->get();
+
+        // $attendanceData = [];
 
         // Statistik Status Pembayaran bulan ini
         $paymentStats = $this->getPaymentStats();

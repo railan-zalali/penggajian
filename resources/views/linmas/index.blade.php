@@ -72,10 +72,12 @@
                             <th class="py-3 px-6 text-left">No</th>
                             <th class="py-3 px-6 text-left">Nama</th>
                             <th class="py-3 px-6 text-left">NIK</th>
-                            <th class="py-3 px-6 text-left">Tempat/Tgl Lahir</th>
-                            <th class="py-3 px-6 text-left">Alamat</th>
+                            <th class="py-3 px-6 text-left">Tempat Lahir</th>
+                            <th class="py-3 px-6 text-left">Tanggal Lahir</th>
                             <th class="py-3 px-6 text-left">Pendidikan</th>
                             <th class="py-3 px-6 text-left">Pekerjaan</th>
+                            <th class="py-3 px-6 text-left">Posisi</th>
+                            <th class="py-3 px-6 text-left">Status</th>
                             <th class="py-3 px-6 text-center">Aksi</th>
                         </tr>
                     </thead>
@@ -85,11 +87,12 @@
                                 <td class="py-3 px-6 text-left whitespace-nowrap">{{ $index + 1 }}</td>
                                 <td class="py-3 px-6 text-left">{{ $item->nama }}</td>
                                 <td class="py-3 px-6 text-left">{{ $item->nik }}</td>
-                                <td class="py-3 px-6 text-left">{{ $item->tempat_lahir }}, {{ $item->tanggal_lahir }}
-                                </td>
-                                <td class="py-3 px-6 text-left">{{ $item->alamat }}</td>
+                                <td class="py-3 px-6 text-left">{{ $item->tempat_lahir }}</td>
+                                <td class="py-3 px-6 text-left">{{ $item->tanggal_lahir ? date('d-m-Y', strtotime($item->tanggal_lahir)) : '' }}</td>
                                 <td class="py-3 px-6 text-left">{{ $item->pendidikan }}</td>
                                 <td class="py-3 px-6 text-left">{{ $item->pekerjaan }}</td>
+                                <td class="py-3 px-6 text-left">{{ $item->posisi }}</td>
+                                <td class="py-3 px-6 text-left">{{ ucfirst($item->status ?? 'aktif') }}</td>
                                 <td class="py-3 px-6 text-center">
                                     <div class="flex item-center justify-center space-x-2">
                                         <a href="{{ route('linmas.edit', $item->id) }}"

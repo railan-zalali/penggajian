@@ -14,6 +14,7 @@ use App\Http\Controllers\AllowanceDeductionController;
 use App\Http\Controllers\MonthClosingController;
 use App\Http\Controllers\PayrollWorkflowController;
 use App\Http\Controllers\PerangkatDashboardController;
+use App\Http\Controllers\PositionSalaryRateController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Route;
@@ -93,6 +94,11 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             'update' => 'rates.update',
             'destroy' => 'rates.destroy'
         ]);
+
+        // Position Salary Rates
+        Route::resource('position-rates', PositionSalaryRateController::class);
+        Route::get('position-rates-recalculate', [PositionSalaryRateController::class, 'recalculateRates'])
+            ->name('position-rates.recalculate');
 
 
 

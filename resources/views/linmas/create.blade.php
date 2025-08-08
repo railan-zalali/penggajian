@@ -20,14 +20,6 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="nama">Nama</label>
-                        <input name="nama"
-                            class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
-                            id="nama" type="text" placeholder="Masukkan nama" value="{{ old('nama') }}"
-                            required>
-                    </div>
-
-                    <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="nik">NIK</label>
                         <input name="nik"
                             class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
@@ -36,8 +28,15 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="tempat_lahir">Tempat
-                            Lahir</label>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="nama">Nama</label>
+                        <input name="nama"
+                            class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
+                            id="nama" type="text" placeholder="Masukkan nama" value="{{ old('nama') }}"
+                            required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="tempat_lahir">Tempat Lahir</label>
                         <input name="tempat_lahir"
                             class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
                             id="tempat_lahir" type="text" placeholder="Masukkan tempat lahir"
@@ -45,18 +44,19 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="tanggal_lahir">Tanggal
-                            Lahir</label>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="tanggal_lahir">Tanggal Lahir</label>
                         <input name="tanggal_lahir"
                             class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
-                            id="tanggal_lahir" type="date" value="{{ old('tanggal_lahir') }}" required>
+                            id="tanggal_lahir" type="date" placeholder="Masukkan tanggal lahir"
+                            value="{{ old('tanggal_lahir') }}" required>
                     </div>
 
-                    <div class="mb-4 md:col-span-2">
+                    <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="alamat">Alamat</label>
-                        <textarea name="alamat"
+                        <input name="alamat"
                             class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
-                            id="alamat" placeholder="Masukkan alamat" rows="3" required>{{ old('alamat') }}</textarea>
+                            id="alamat" type="text" placeholder="Masukkan alamat"
+                            value="{{ old('alamat') }}" required>
                     </div>
 
                     <div class="mb-4">
@@ -68,7 +68,11 @@
                             <option value="SD" {{ old('pendidikan') == 'SD' ? 'selected' : '' }}>SD</option>
                             <option value="SMP" {{ old('pendidikan') == 'SMP' ? 'selected' : '' }}>SMP</option>
                             <option value="SMA" {{ old('pendidikan') == 'SMA' ? 'selected' : '' }}>SMA</option>
+                            <option value="SMK" {{ old('pendidikan') == 'SMK' ? 'selected' : '' }}>SMK</option>
+                            <option value="D1" {{ old('pendidikan') == 'D1' ? 'selected' : '' }}>D1</option>
+                            <option value="D2" {{ old('pendidikan') == 'D2' ? 'selected' : '' }}>D2</option>
                             <option value="D3" {{ old('pendidikan') == 'D3' ? 'selected' : '' }}>D3</option>
+                            <option value="D4" {{ old('pendidikan') == 'D4' ? 'selected' : '' }}>D4</option>
                             <option value="S1" {{ old('pendidikan') == 'S1' ? 'selected' : '' }}>S1</option>
                             <option value="S2" {{ old('pendidikan') == 'S2' ? 'selected' : '' }}>S2</option>
                             <option value="S3" {{ old('pendidikan') == 'S3' ? 'selected' : '' }}>S3</option>
@@ -81,6 +85,46 @@
                             class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
                             id="pekerjaan" type="text" placeholder="Masukkan pekerjaan"
                             value="{{ old('pekerjaan') }}" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="posisi">Posisi</label>
+                        <input name="posisi"
+                            class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
+                            id="posisi" type="text" placeholder="Masukkan posisi"
+                            value="{{ old('posisi', 'Perangkat Desa') }}">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="tanggal_bergabung">Tanggal Bergabung</label>
+                        <input name="tanggal_bergabung"
+                            class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
+                            id="tanggal_bergabung" type="date" placeholder="Masukkan tanggal bergabung"
+                            value="{{ old('tanggal_bergabung', date('Y-m-d')) }}">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="thn">Tahun</label>
+                        <input name="thn"
+                            class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
+                            id="thn" type="text" placeholder="Masukkan tahun"
+                            value="{{ old('thn') }}">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="bln">Bulan</label>
+                        <input name="bln"
+                            class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
+                            id="bln" type="text" placeholder="Masukkan bulan"
+                            value="{{ old('bln') }}">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="kontak">Kontak</label>
+                        <input name="kontak"
+                            class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
+                            id="kontak" type="text" placeholder="Masukkan kontak"
+                            value="{{ old('kontak') }}">
                     </div>
                 </div>
 

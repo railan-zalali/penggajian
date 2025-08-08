@@ -174,7 +174,7 @@
                                                     $totalAllowances = $payroll['total_allowances'];
                                                 } elseif (isset($payroll['allowances'])) {
                                                     foreach ($payroll['allowances'] as $allowance) {
-                                                        $totalAllowances += $allowance['value'];
+                                                        $totalAllowances += $allowance['amount'] ?? $allowance['value'] ?? 0;
                                                     }
                                                 }
                                             @endphp
@@ -202,7 +202,7 @@
                                                     $totalDeductions = $payroll['total_deductions'];
                                                 } elseif (isset($payroll['deductions'])) {
                                                     foreach ($payroll['deductions'] as $deduction) {
-                                                        $totalDeductions += $deduction['value'];
+                                                        $totalDeductions += $deduction['amount'] ?? $deduction['value'] ?? 0;
                                                     }
                                                 }
                                             @endphp
@@ -413,13 +413,14 @@
                 payroll.allowances.forEach(allowance => {
                     const item = document.createElement('div');
                     item.className = 'py-3';
+                    const amount = allowance.amount !== undefined ? allowance.amount : allowance.value;
                     item.innerHTML = `
                         <div class="flex justify-between items-center">
                             <div>
                                 <p class="text-sm font-medium text-gray-900">${allowance.name}</p>
                                 <p class="text-xs text-gray-500">${allowance.code}</p>
                             </div>
-                            <p class="text-sm font-medium text-green-600">Rp ${new Intl.NumberFormat('id-ID').format(allowance.value)}</p>
+                            <p class="text-sm font-medium text-green-600">Rp ${new Intl.NumberFormat('id-ID').format(amount)}</p>
                         </div>
                     `;
                     allowanceDetails.appendChild(item);
@@ -441,13 +442,14 @@
                 payroll.deductions.forEach(deduction => {
                     const item = document.createElement('div');
                     item.className = 'py-3';
+                    const amount = deduction.amount !== undefined ? deduction.amount : deduction.value;
                     item.innerHTML = `
                         <div class="flex justify-between items-center">
                             <div>
                                 <p class="text-sm font-medium text-gray-900">${deduction.name}</p>
                                 <p class="text-xs text-gray-500">${deduction.code}</p>
                             </div>
-                            <p class="text-sm font-medium text-red-600">Rp ${new Intl.NumberFormat('id-ID').format(deduction.value)}</p>
+                            <p class="text-sm font-medium text-red-600">Rp ${new Intl.NumberFormat('id-ID').format(amount)}</p>
                         </div>
                     `;
                     deductionDetails.appendChild(item);

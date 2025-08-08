@@ -6,7 +6,8 @@
 
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 class="text-xl font-semibold mb-4">Filter</h2>
-            <form action="{{ route('payroll.history.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <form action="{{ route('payroll.history.index') }}" method="GET"
+                class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                     <label for="month_year" class="block text-sm font-medium text-gray-700 mb-1">Bulan & Tahun</label>
                     <select name="month_year" id="month_year"
@@ -47,7 +48,7 @@
                         @foreach ($linmasOptions as $linmas)
                             <option value="{{ $linmas->id }}"
                                 {{ request('linmas_id') == $linmas->id ? 'selected' : '' }}>
-                                {{ $linmas->nama }} ({{ $linmas->nik }})
+                                {{ $linmas->nama }} ({{ $linmas->nama }})
                             </option>
                         @endforeach
                     </select>
@@ -135,7 +136,7 @@
                                 {{ $payroll->linmas->nama ?? 'N/A' }}
                             </td>
                             <td class="py-3 px-6 text-left">
-                                {{ $payroll->linmas->nik ?? 'N/A' }}
+                                {{ $payroll->linmas->nama ?? 'N/A' }}
                             </td>
                             <td class="py-3 px-6 text-right font-medium">
                                 Rp {{ number_format($payroll->total_salary, 0, ',', '.') }}
@@ -224,7 +225,7 @@
                                         </svg>
                                     </button>
 
-                                    <a href="{{ route('payroll.exportSlip', $payroll->linmas->nik) }}"
+                                    <a href="{{ route('payroll.exportSlip', $payroll->linmas->nama) }}"
                                         onclick="event.preventDefault(); document.getElementById('export-slip-form-{{ $payroll->id }}').submit();"
                                         class="bg-green-500 text-white px-3 py-1 rounded-lg shadow hover:bg-green-600 transition duration-300 ease-in-out transform hover:-translate-y-1">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20"
@@ -236,7 +237,7 @@
                                     </a>
 
                                     <form id="export-slip-form-{{ $payroll->id }}"
-                                        action="{{ route('payroll.exportSlip', $payroll->linmas->nik) }}"
+                                        action="{{ route('payroll.exportSlip', $payroll->linmas->nama) }}"
                                         method="POST" class="hidden">
                                         @csrf
                                         <input type="hidden" name="start_date"

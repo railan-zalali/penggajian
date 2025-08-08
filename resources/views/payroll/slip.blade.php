@@ -245,7 +245,7 @@
                         @foreach ($payrollData['allowances'] as $allowance)
                             <tr>
                                 <td>{{ $allowance['name'] }}</td>
-                                <td class="amount">Rp {{ number_format($allowance['amount'], 0, ',', '.') }}</td>
+                                <td class="amount">Rp {{ number_format(isset($allowance['amount']) ? $allowance['amount'] : ($allowance['value'] ?? 0), 0, ',', '.') }}</td>
                             </tr>
                         @endforeach
                     @else
@@ -270,7 +270,7 @@
                         <td>Total Pendapatan Kotor</td>
                         <td class="amount">Rp
                             {{ number_format(
-                                $payrollData['base_salary'] + $payrollData['overtime_payment'] + ($payrollData['total_allowances'] ?? 0),
+                                max(0, $payrollData['base_salary'] + $payrollData['overtime_payment'] + ($payrollData['total_allowances'] ?? 0)),
                                 0,
                                 ',',
                                 '.',
@@ -293,7 +293,7 @@
                         @foreach ($payrollData['deductions'] as $deduction)
                             <tr>
                                 <td>{{ $deduction['name'] }}</td>
-                                <td class="amount">Rp {{ number_format($deduction['amount'], 0, ',', '.') }}</td>
+                                <td class="amount">Rp {{ number_format(isset($deduction['amount']) ? $deduction['amount'] : ($deduction['value'] ?? 0), 0, ',', '.') }}</td>
                             </tr>
                         @endforeach
                     @else

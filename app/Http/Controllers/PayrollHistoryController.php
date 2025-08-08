@@ -71,7 +71,7 @@ class PayrollHistoryController extends Controller
         $month = $request->month;
         $year = $request->year;
 
-        $payrolls = Payroll::with('linmas')
+        $payrolls = Payroll::with(['linmas', 'details'])
             ->whereMonth('payroll_date', $month)
             ->whereYear('payroll_date', $year)
             ->get();

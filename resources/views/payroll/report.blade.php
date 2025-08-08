@@ -151,7 +151,7 @@
                             $allowanceAmount = $data['total_allowances'];
                         } elseif (isset($data['allowances'])) {
                             foreach ($data['allowances'] as $allowance) {
-                                $allowanceAmount += $allowance['value'];
+                                $allowanceAmount += isset($allowance['amount']) ? $allowance['amount'] : ($allowance['value'] ?? 0);
                             }
                         }
                         $totalAllowances += $allowanceAmount;
@@ -161,7 +161,7 @@
                             $deductionAmount = $data['total_deductions'];
                         } elseif (isset($data['deductions'])) {
                             foreach ($data['deductions'] as $deduction) {
-                                $deductionAmount += $deduction['value'];
+                                $deductionAmount += isset($deduction['amount']) ? $deduction['amount'] : ($deduction['value'] ?? 0);
                             }
                         }
                         $totalDeductions += $deductionAmount;
@@ -213,7 +213,7 @@
                         @foreach ($data['allowances'] as $allowance)
                             <tr>
                                 <td>{{ $allowance['name'] }}</td>
-                                <td class="amount-column">Rp {{ number_format($allowance['value'], 0, ',', '.') }}</td>
+                                <td class="amount-column">Rp {{ number_format(isset($allowance['amount']) ? $allowance['amount'] : ($allowance['value'] ?? 0), 0, ',', '.') }}</td>
                             </tr>
                         @endforeach
                         <tr class="total-row">
@@ -221,7 +221,7 @@
                             @php
                                 $totalAllowance = 0;
                                 foreach ($data['allowances'] as $allowance) {
-                                    $totalAllowance += $allowance['value'];
+                                    $totalAllowance += isset($allowance['amount']) ? $allowance['amount'] : ($allowance['value'] ?? 0);
                                 }
                             @endphp
                             <td class="amount-column">Rp {{ number_format($totalAllowance, 0, ',', '.') }}</td>
@@ -246,7 +246,7 @@
                         @foreach ($data['deductions'] as $deduction)
                             <tr>
                                 <td>{{ $deduction['name'] }}</td>
-                                <td class="amount-column">Rp {{ number_format($deduction['value'], 0, ',', '.') }}</td>
+                                <td class="amount-column">Rp {{ number_format(isset($deduction['amount']) ? $deduction['amount'] : ($deduction['value'] ?? 0), 0, ',', '.') }}</td>
                             </tr>
                         @endforeach
                         <tr class="total-row">
@@ -254,7 +254,7 @@
                             @php
                                 $totalDeduction = 0;
                                 foreach ($data['deductions'] as $deduction) {
-                                    $totalDeduction += $deduction['value'];
+                                    $totalDeduction += isset($deduction['amount']) ? $deduction['amount'] : ($deduction['value'] ?? 0);
                                 }
                             @endphp
                             <td class="amount-column">Rp {{ number_format($totalDeduction, 0, ',', '.') }}</td>

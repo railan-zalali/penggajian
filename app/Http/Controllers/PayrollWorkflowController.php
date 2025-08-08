@@ -14,22 +14,37 @@ class PayrollWorkflowController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Payroll::with(['linmas', 'verifier', 'approver']);
+        try {
+            $query = Payroll::with(['linmas', 'verifier', 'approver']);
 
-        // Filter berdasarkan status
-        if ($request->has('status') && $request->status != 'all') {
-            $query->where('processing_status', $request->status);
+            // Filter berdasarkan status
+            if ($request->has('status') && $request->status != 'all') {
+                $query->where('processing_status', $request->status);
+            }
+
+            // Filter berdasarkan periode
+            if ($request->has('month') && $request->has('year')) {
+                $query->whereMonth('payroll_date', $request->month)
+                    ->whereYear('payroll_date', $request->year);
+            }
+
+            // Log untuk debugging
+            \Illuminate\Support\Facades\Log::info("Fetching payroll workflow list", [
+                'status_filter' => $request->status ?? 'all',
+                'month_filter' => $request->month ?? 'all',
+                'year_filter' => $request->year ?? 'all'
+            ]);
+
+            $payrolls = $query->orderBy('payroll_date', 'desc')->paginate(15);
+
+            return view('payroll.workflow.index', compact('payrolls'));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Error in payroll workflow index", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return view('payroll.workflow.index', ['payrolls' => collect()])->with('error', 'Terjadi kesalahan saat memuat data: ' . $e->getMessage());
         }
-
-        // Filter berdasarkan periode
-        if ($request->has('month') && $request->has('year')) {
-            $query->whereMonth('payroll_date', $request->month)
-                ->whereYear('payroll_date', $request->year);
-        }
-
-        $payrolls = $query->orderBy('payroll_date', 'desc')->paginate(15);
-
-        return view('payroll.workflow.index', compact('payrolls'));
     }
 
     /**
@@ -37,19 +52,44 @@ class PayrollWorkflowController extends Controller
      */
     public function show(Payroll $payroll)
     {
-        $payroll->load(['linmas', 'details', 'verifier', 'approver']);
+        try {
+            // Log untuk debugging
+            \Illuminate\Support\Facades\Log::info("Viewing payroll detail", [
+                'payroll_id' => $payroll->id,
+                'linmas_id' => $payroll->linmas_id,
+                'current_status' => $payroll->processing_status,
+                'user_id' => \Illuminate\Support\Facades\Auth::id()
+            ]);
 
-        // Dapatkan daftar status yang valid untuk transisi
-        $validStatusTransitions = [];
-        $allStatuses = ['verified', 'calculated', 'approved', 'processed', 'completed', 'rejected', 'draft'];
+            $payroll->load(['linmas', 'details', 'verifier', 'approver']);
 
-        foreach ($allStatuses as $status) {
-            if ($payroll->canTransitionTo($status)) {
-                $validStatusTransitions[$status] = $this->getStatusLabel($status);
+            // Periksa apakah data linmas ada
+            if (!$payroll->linmas) {
+                \Illuminate\Support\Facades\Log::warning("Linmas not found for payroll ID: {$payroll->id}");
+                return redirect()->route('payroll.workflow.index')
+                    ->withErrors(['msg' => 'Data anggota Linmas tidak ditemukan untuk penggajian ini.']);
             }
-        }
 
-        return view('payroll.workflow.show', compact('payroll', 'validStatusTransitions'));
+            // Dapatkan daftar status yang valid untuk transisi
+            $validStatusTransitions = [];
+            $allStatuses = ['verified', 'calculated', 'approved', 'processed', 'completed', 'rejected', 'draft'];
+
+            foreach ($allStatuses as $status) {
+                if ($payroll->canTransitionTo($status)) {
+                    $validStatusTransitions[$status] = $this->getStatusLabel($status);
+                }
+            }
+
+            return view('payroll.workflow.show', compact('payroll', 'validStatusTransitions'));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Error viewing payroll detail", [
+                'payroll_id' => $payroll->id ?? 'unknown',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->route('payroll.workflow.index')
+                ->withErrors(['msg' => 'Terjadi kesalahan saat memuat detail penggajian: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -57,43 +97,78 @@ class PayrollWorkflowController extends Controller
      */
     public function updateStatus(Request $request, Payroll $payroll)
     {
-        $request->validate([
-            'status' => 'required|string|in:draft,verified,calculated,approved,processed,completed,rejected',
-            'notes' => 'nullable|string|max:500',
-        ]);
+        try {
+            $request->validate([
+                'status' => 'required|string|in:draft,verified,calculated,approved,processed,completed,rejected',
+                'notes' => 'nullable|string|max:500',
+            ]);
 
-        $targetStatus = $request->status;
+            $targetStatus = $request->status;
+            $currentStatus = $payroll->processing_status;
 
-        // Cek apakah transisi status valid
-        if (!$payroll->canTransitionTo($targetStatus)) {
-            return back()->with('error', "Tidak dapat mengubah status dari '{$payroll->status_text}' ke '{$this->getStatusLabel($targetStatus)}'");
+            // Log untuk debugging
+            \Illuminate\Support\Facades\Log::info("Attempting to change payroll status", [
+                'payroll_id' => $payroll->id,
+                'linmas_id' => $payroll->linmas_id,
+                'current_status' => $currentStatus,
+                'target_status' => $targetStatus,
+                'user_id' => Auth::id()
+            ]);
+
+            // Cek apakah transisi status valid
+            if (!$payroll->canTransitionTo($targetStatus)) {
+                \Illuminate\Support\Facades\Log::warning("Invalid status transition", [
+                    'payroll_id' => $payroll->id,
+                    'current_status' => $currentStatus,
+                    'target_status' => $targetStatus
+                ]);
+                return back()->with('error', "Tidak dapat mengubah status dari '{$payroll->status_text}' ke '{$this->getStatusLabel($targetStatus)}'");
+            }
+
+            // Update status
+            $payroll->processing_status = $targetStatus;
+            $payroll->status_notes = $request->notes;
+
+            // Catat user yang melakukan verifikasi/approval
+            if ($targetStatus === 'verified') {
+                $payroll->verified_by = Auth::id();
+                $payroll->verified_at = now();
+            } elseif ($targetStatus === 'approved') {
+                $payroll->approved_by = Auth::id();
+                $payroll->approved_at = now();
+            }
+
+            // Otomatis update payment_status jika status adalah completed/rejected
+            if ($targetStatus === 'completed') {
+                $payroll->payment_status = 'paid';
+                $payroll->payment_date = now();
+            } elseif ($targetStatus === 'rejected') {
+                $payroll->payment_status = 'cancelled';
+            }
+
+            $payroll->save();
+
+            \Illuminate\Support\Facades\Log::info("Payroll status changed successfully", [
+                'payroll_id' => $payroll->id,
+                'from_status' => $currentStatus,
+                'to_status' => $targetStatus
+            ]);
+
+            return redirect()->route('payroll.workflow.index')
+                ->with('success', "Status penggajian berhasil diubah menjadi '{$this->getStatusLabel($targetStatus)}'");
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::warning("Validation error in updateStatus", [
+                'errors' => $e->errors()
+            ]);
+            return back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Error updating payroll status", [
+                'payroll_id' => $payroll->id ?? 'unknown',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', "Terjadi kesalahan saat mengubah status: {$e->getMessage()}");
         }
-
-        // Update status
-        $payroll->processing_status = $targetStatus;
-        $payroll->status_notes = $request->notes;
-
-        // Catat user yang melakukan verifikasi/approval
-        if ($targetStatus === 'verified') {
-            $payroll->verified_by = Auth::id();
-            $payroll->verified_at = now();
-        } elseif ($targetStatus === 'approved') {
-            $payroll->approved_by = Auth::id();
-            $payroll->approved_at = now();
-        }
-
-        // Otomatis update payment_status jika status adalah completed/rejected
-        if ($targetStatus === 'completed') {
-            $payroll->payment_status = 'paid';
-            $payroll->payment_date = now();
-        } elseif ($targetStatus === 'rejected') {
-            $payroll->payment_status = 'cancelled';
-        }
-
-        $payroll->save();
-
-        return redirect()->route('payroll.workflow.index')
-            ->with('success', "Status penggajian berhasil diubah menjadi '{$this->getStatusLabel($targetStatus)}'");
     }
 
     /**
@@ -119,33 +194,67 @@ class PayrollWorkflowController extends Controller
      */
     public function report(Request $request)
     {
-        $query = Payroll::with(['linmas', 'verifier', 'approver']);
+        try {
+            $query = Payroll::with(['linmas', 'verifier', 'approver']);
 
-        // Filter berdasarkan periode
-        if ($request->has('month') && $request->has('year')) {
-            $query->whereMonth('payroll_date', $request->month)
-                ->whereYear('payroll_date', $request->year);
+            // Filter berdasarkan periode
+            if ($request->has('month') && $request->has('year')) {
+                $query->whereMonth('payroll_date', $request->month)
+                    ->whereYear('payroll_date', $request->year);
+            }
+
+            // Log untuk debugging
+            \Illuminate\Support\Facades\Log::info("Generating workflow report", [
+                'month_filter' => $request->month ?? 'all',
+                'year_filter' => $request->year ?? 'all',
+                'user_id' => \Illuminate\Support\Facades\Auth::id()
+            ]);
+
+            // Grouping berdasarkan status
+            $summary = [
+                'draft' => $query->clone()->where('processing_status', 'draft')->count(),
+                'verified' => $query->clone()->where('processing_status', 'verified')->count(),
+                'calculated' => $query->clone()->where('processing_status', 'calculated')->count(),
+                'approved' => $query->clone()->where('processing_status', 'approved')->count(),
+                'processed' => $query->clone()->where('processing_status', 'processed')->count(),
+                'completed' => $query->clone()->where('processing_status', 'completed')->count(),
+                'rejected' => $query->clone()->where('processing_status', 'rejected')->count(),
+            ];
+
+            // Data untuk grafik pie
+            $chartData = [
+                'labels' => array_map(function ($status) {
+                    return $this->getStatusLabel($status);
+                }, array_keys($summary)),
+                'data' => array_values($summary)
+            ];
+
+            return view('payroll.workflow.report', compact('summary', 'chartData'));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Error generating workflow report", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Buat data kosong untuk ditampilkan
+            $summary = [
+                'draft' => 0,
+                'verified' => 0,
+                'calculated' => 0,
+                'approved' => 0,
+                'processed' => 0,
+                'completed' => 0,
+                'rejected' => 0,
+            ];
+
+            $chartData = [
+                'labels' => array_map(function ($status) {
+                    return $this->getStatusLabel($status);
+                }, array_keys($summary)),
+                'data' => array_values($summary)
+            ];
+
+            return view('payroll.workflow.report', compact('summary', 'chartData'))->with('error', 'Terjadi kesalahan saat membuat laporan: ' . $e->getMessage());
         }
-
-        // Grouping berdasarkan status
-        $summary = [
-            'draft' => $query->clone()->where('processing_status', 'draft')->count(),
-            'verified' => $query->clone()->where('processing_status', 'verified')->count(),
-            'calculated' => $query->clone()->where('processing_status', 'calculated')->count(),
-            'approved' => $query->clone()->where('processing_status', 'approved')->count(),
-            'processed' => $query->clone()->where('processing_status', 'processed')->count(),
-            'completed' => $query->clone()->where('processing_status', 'completed')->count(),
-            'rejected' => $query->clone()->where('processing_status', 'rejected')->count(),
-        ];
-
-        // Data untuk grafik pie
-        $chartData = [
-            'labels' => array_map(function ($status) {
-                return $this->getStatusLabel($status);
-            }, array_keys($summary)),
-            'data' => array_values($summary)
-        ];
-
-        return view('payroll.workflow.report', compact('summary', 'chartData'));
     }
 }

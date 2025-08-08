@@ -5,22 +5,36 @@ namespace App\Imports;
 
 use App\Models\Attendances;
 use App\Models\Linmas;
+use App\Models\MonthClosing;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Concerns\SkipsOnError;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Validators\Failure;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
-class AttendancesImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnError, SkipsOnFailure
+class AttendancesImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnError, SkipsOnFailure, WithBatchInserts, WithChunkReading
 {
     /**
      * @var array
      */
     protected $errors = [];
+    
+    /**
+     * @var array
+     */
+    protected $processedDates = [];
+    
+    /**
+     * @var int
+     */
+    protected $successCount = 0;
 
     /**
      * @param array $row
@@ -34,62 +48,116 @@ class AttendancesImport implements ToModel, WithHeadingRow, WithValidation, Skip
             if (!isset($row['nama']) || !isset($row['waktu']) || !isset($row['status'])) {
                 return null;
             }
-
-            // Cari anggota linmas berdasarkan nama
-            $linmas = Linmas::where('nama', $row['nama'])->first();
-            if (!$linmas) {
-                $this->errors[] = "Perangkat Desa dengan nama '{$row['nama']}' tidak ditemukan";
+            
+            // Validasi status harus salah satu dari nilai yang valid
+            $validStatus = ['C/Masuk', 'C/Keluar', 'Lembur Masuk', 'Lembur Keluar'];
+            if (!in_array($row['status'], $validStatus)) {
+                $this->errors[] = "Status '{$row['status']}' tidak valid. Gunakan salah satu dari: " . implode(', ', $validStatus);
                 return null;
             }
+
+            // Coba cari berdasarkan NIK terlebih dahulu (lebih akurat)
+            $linmas = null;
+            if (isset($row['nik']) && !empty($row['nik'])) {
+                $linmas = Linmas::where('nik', $row['nik'])->first();
+            }
+            
+            // Jika tidak ditemukan dengan NIK, cari berdasarkan nama (case insensitive)
+            if (!$linmas) {
+                $linmas = Linmas::where(DB::raw('LOWER(nama)'), strtolower(trim($row['nama'])))->first();
+                
+                if (!$linmas) {
+                    $errorMsg = "Perangkat Desa tidak ditemukan";
+                    if (isset($row['nik']) && !empty($row['nik'])) {
+                        $errorMsg .= " dengan NIK '{$row['nik']}'";
+                    }
+                    if (isset($row['nama']) && !empty($row['nama'])) {
+                        $errorMsg .= (isset($row['nik']) && !empty($row['nik'])) ? " dan nama '{$row['nama']}'" : " dengan nama '{$row['nama']}'";
+                    }
+                    $this->errors[] = $errorMsg;
+                    return null;
+                }
+            }
+            
+            // Format tanggal yang didukung
             $formats = [
-                'Y-m-d H:i:s', 'Y/m/d H:i:s', 'd/m/Y H:i:s', 'm/d/Y H:i:s',
-                'Y-m-d H:i', 'Y/m/d H:i', 'd/m/Y H:i', 'm/d/Y H:i'
+                'd-m-Y H:i',     // Format utama: 01-01-2023 08:00
+                'Y-m-d H:i:s',   // Format ISO
+                'Y/m/d H:i:s',
+                'd/m/Y H:i:s',
+                'm/d/Y H:i:s',
+                'Y-m-d H:i',
+                'Y/m/d H:i',
+                'd/m/Y H:i',
+                'm/d/Y H:i'
             ];
             $waktu = null;
 
             // Parsing tanggal dengan validasi
             try {
                 foreach ($formats as $format) {
-                    $parsed = Carbon::createFromFormat($format, $row['waktu']);
-                    if ($parsed !== false) {
+                    try {
+                        $parsed = Carbon::createFromFormat($format, $row['waktu']);
                         $waktu = $parsed;
                         break;
+                    } catch (\Exception $e) {
+                        continue;
                     }
                 }
+                
+                if (!$waktu) {
+                    throw new \Exception("Format tanggal tidak valid");
+                }
             } catch (\Exception $e) {
-                $this->errors[] = "Format tanggal '{$row['waktu']}' tidak valid. Gunakan format 'YYYY-MM-DD HH:MM:SS'";
+                $this->errors[] = "Format tanggal '{$row['waktu']}' tidak valid. Gunakan format 'DD-MM-YYYY HH:MM'";
+                return null;
+            }
+            
+            // Cek apakah bulan sudah ditutup
+            if (MonthClosing::isMonthClosed($waktu->year, $waktu->month)) {
+                $this->errors[] = "Periode {$waktu->format('F Y')} sudah ditutup, tidak bisa menambah data kehadiran";
                 return null;
             }
 
+            // Buat kunci unik untuk mencegah duplikasi dalam satu batch impor
+            $dateKey = $linmas->id . '_' . $waktu->toDateString() . '_' . $row['status'];
+            if (isset($this->processedDates[$dateKey])) {
+                $this->errors[] = "Duplikasi data kehadiran untuk {$linmas->nama} pada {$waktu->format('d-m-Y')} dengan status {$row['status']} dalam file impor";
+                return null;
+            }
+            $this->processedDates[$dateKey] = true;
+            
             // =====================================================================
             // VALIDASI PENCEGAHAN DUPLIKASI DATA KEHADIRAN
             // =====================================================================
 
             // 1. Cek duplikasi data yang persis sama (linmas_id, waktu, status)
+            // Gunakan exists untuk performa lebih baik
             $exactDuplicate = Attendances::where('linmas_id', $linmas->id)
                 ->where('waktu', $waktu)
                 ->where('status', $row['status'])
-                ->first();
+                ->exists();
 
             if ($exactDuplicate) {
-                $this->errors[] = "Data kehadiran untuk {$linmas->nama} pada {$waktu->format('d-m-Y H:i:s')} dengan status {$row['status']} sudah ada";
+                $this->errors[] = "Data kehadiran untuk {$linmas->nama} pada {$waktu->format('d-m-Y H:i')} dengan status {$row['status']} sudah ada";
                 return null;
             }
 
             // 2. Cek duplikasi status pada hari yang sama
+            // Hanya cek duplikasi untuk status yang sama pada hari yang sama
             $sameDayStatusDuplicate = Attendances::where('linmas_id', $linmas->id)
                 ->whereDate('waktu', $waktu->toDateString())
                 ->where('status', $row['status'])
-                ->first();
+                ->exists();
 
             if ($sameDayStatusDuplicate) {
-                $this->errors[] = "Status {$row['status']} untuk {$linmas->nama} pada tanggal {$waktu->toDateString()} sudah ada";
+                $this->errors[] = "Status {$row['status']} untuk {$linmas->nama} pada tanggal {$waktu->format('d-m-Y')} sudah ada";
                 return null;
             }
 
             // 3. Validasi urutan masuk/keluar
             if ($row['status'] == 'C/Masuk') {
-                // Cek apakah sudah ada status keluar pada waktu yang lebih awal
+                // Cek apakah sudah ada status keluar pada waktu yang lebih awal di hari yang sama
                 $existingExit = Attendances::where('linmas_id', $linmas->id)
                     ->whereDate('waktu', $waktu->toDateString())
                     ->where('status', 'C/Keluar')
@@ -137,12 +205,12 @@ class AttendancesImport implements ToModel, WithHeadingRow, WithValidation, Skip
                 }
             }
 
+            $this->successCount++;
             return new Attendances([
                 'linmas_id' => $linmas->id,
                 'waktu' => $waktu,
                 'status' => $row['status'],
-                'status_baru' => $row['status_baru'] ?? null,
-                'pengecualian' => $row['pengecualian'] ?? null,
+                // status_baru dan pengecualian dihapus sesuai kebutuhan
             ]);
         } catch (\Exception $e) {
             Log::error('Error saat import data kehadiran: ' . $e->getMessage());
@@ -159,9 +227,9 @@ class AttendancesImport implements ToModel, WithHeadingRow, WithValidation, Skip
         return [
             'nama' => 'required|string',
             'waktu' => 'required',
-            'status' => 'required|string',
-            'status_baru' => 'nullable|string',
-            'pengecualian' => 'nullable|string',
+            'status' => 'required|in:C/Masuk,C/Keluar,Lembur Masuk,Lembur Keluar',
+            'nik' => 'nullable|string',
+            // status_baru column removed as per requirements
         ];
     }
 
@@ -190,5 +258,29 @@ class AttendancesImport implements ToModel, WithHeadingRow, WithValidation, Skip
     public function getErrors(): array
     {
         return $this->errors;
+    }
+    
+    /**
+     * @return int
+     */
+    public function getSuccessCount(): int
+    {
+        return $this->successCount;
+    }
+    
+    /**
+     * @return int
+     */
+    public function batchSize(): int
+    {
+        return 100; // Proses 100 baris sekaligus untuk optimasi
+    }
+    
+    /**
+     * @return int
+     */
+    public function chunkSize(): int
+    {
+        return 500; // Baca 500 baris sekaligus untuk optimasi memori
     }
 }
