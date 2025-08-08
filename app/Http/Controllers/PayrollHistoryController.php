@@ -26,13 +26,14 @@ class PayrollHistoryController extends Controller
             $query->where('payment_status', $request->status);
         }
 
-        // Filter by linmas
-        if ($request->has('linmas_id') && $request->linmas_id != 'all') {
-            $query->where('linmas_id', $request->linmas_id);
+        // Filter by linmas NIK
+        if ($request->filled('linmas_nik')) {
+            $linmas = Linmas::where('nik', $request->linmas_nik)->first();
+            // If a linmas is found, filter by their ID. If not found, return no results.
+            $query->where('linmas_id', $linmas ? $linmas->id : -1);
         }
 
         $payrolls = $query->latest('payroll_date')->paginate(10);
-        $linmasOptions = Linmas::orderBy('nama')->get();
 
         // Get unique months and years for the filter
         $dates = Payroll::selectRaw('DISTINCT MONTH(payroll_date) as month, YEAR(payroll_date) as year')
@@ -40,7 +41,7 @@ class PayrollHistoryController extends Controller
             ->orderBy('month', 'desc')
             ->get();
 
-        return view('payroll.history', compact('payrolls', 'linmasOptions', 'dates'));
+        return view('payroll.history', compact('payrolls', 'dates'));
     }
 
     public function updateStatus(Request $request, Payroll $payroll)

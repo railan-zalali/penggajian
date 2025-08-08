@@ -11,6 +11,7 @@ use App\Models\AllowanceDeductionType;
 use App\Models\LinmasAllowanceDeduction;
 use App\Models\PositionSalaryRate;
 use App\Services\PayrollCalculationService;
+use App\Services\PayrollStorageService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -21,10 +22,14 @@ use Illuminate\Support\Facades\Validator;
 class PayrollController extends Controller
 {
     protected $payrollCalculationService;
+    protected $payrollStorageService;
 
-    public function __construct(PayrollCalculationService $payrollCalculationService)
-    {
+    public function __construct(
+        PayrollCalculationService $payrollCalculationService,
+        PayrollStorageService $payrollStorageService
+    ) {
         $this->payrollCalculationService = $payrollCalculationService;
+        $this->payrollStorageService = $payrollStorageService;
     }
 
     public function index()
@@ -227,176 +232,21 @@ class PayrollController extends Controller
 
     public function storePayroll(Request $request)
     {
-        $payrollData = json_decode($request->payroll_data, true);
+        $payrollData = json_decode($request->payroll_data, true) ?? [];
         $endDate = Carbon::parse($request->end_date);
-        $successCount = 0; // Inisialisasi counter untuk data yang berhasil disimpan
-        $errorMessages = []; // Inisialisasi array untuk menyimpan pesan error
+        $forceSave = $request->has('force_save');
 
-        // Validasi data JSON
-        if (empty($payrollData)) {
-            return redirect()->route('payroll.index')
-                ->withErrors(['msg' => 'Data penggajian tidak valid atau kosong.']);
+        $result = $this->payrollStorageService->store($payrollData, $endDate, $forceSave);
+
+        if (!$result['success']) {
+            return redirect()->route('payroll.index')->withErrors(['msg' => $result['message']]);
         }
 
-        // Validasi server-side untuk mencegah duplikasi
-        $existingPayrolls = Payroll::whereMonth('payroll_date', $endDate->month)
-            ->whereYear('payroll_date', $endDate->year)
-            ->get();
-
-        // Log untuk debugging
-        \Illuminate\Support\Facades\Log::info("Checking existing payrolls for {$endDate->format('Y-m')}", [
-            'existing_count' => $existingPayrolls->count(),
-            'force_save' => $request->has('force_save')
-        ]);
-
-        if ($existingPayrolls->isNotEmpty() && !$request->has('force_save')) {
-            return redirect()->route('payroll.index')
-                ->withErrors(['msg' => 'Data penggajian untuk bulan ini sudah ada. Tidak dapat menyimpan duplikat. Gunakan force_save=1 untuk memaksa menyimpan.']);
+        if (isset($result['warning'])) {
+            return redirect()->route('payroll.index')->with('warning', $result['message']);
         }
 
-        DB::beginTransaction();
-
-        try {
-            $successCount = 0;
-            $errorMessages = [];
-
-            foreach ($payrollData as $data) {
-                try {
-                    // Validasi data yang diperlukan
-                    if (empty($data['nik'])) {
-                        $errorMessages[] = 'Ditemukan data tanpa NIK';
-                        continue;
-                    }
-
-                    $linmas = Linmas::where('nik', $data['nik'])->first();
-
-                    if (!$linmas) {
-                        $errorMessages[] = 'NIK ' . $data['nik'] . ' tidak ditemukan';
-                        continue;
-                    }
-
-                    // Pastikan nilai tidak negatif
-                    $totalWage = max(0, $data['total_wage'] ?? 0);
-                    $baseSalary = max(0, $data['base_salary'] ?? 0);
-                    $overtimePayment = max(0, $data['overtime_payment'] ?? 0);
-                    $totalDaysWorked = max(0, $data['total_days_worked'] ?? 0);
-
-                    // Log untuk debugging
-                    \Illuminate\Support\Facades\Log::info("Storing payroll for {$linmas->nik}", [
-                        'name' => $linmas->nama,
-                        'total_wage' => $totalWage,
-                        'base_salary' => $baseSalary,
-                        'overtime' => $overtimePayment,
-                        'days_worked' => $totalDaysWorked
-                    ]);
-
-                    // Buat payroll baru dengan status draft
-                    $payroll = Payroll::create([
-                        'linmas_id' => $linmas->id,
-                        'total_days_present' => $totalDaysWorked,
-                        'base_salary' => $baseSalary,
-                        'overtime_payment' => $overtimePayment,
-                        'total_salary' => $totalWage,
-                        'payroll_date' => $endDate,
-                        'payment_status' => 'pending',
-                        'processing_status' => 'draft', // Set initial workflow status
-                        'status_notes' => 'Data awal, menunggu verifikasi'
-                    ]);
-
-                    // Simpan detail payroll (base salary)
-                    PayrollDetail::create([
-                        'payroll_id' => $payroll->id,
-                        'type_id' => null,
-                        'name' => 'Gaji Pokok',
-                        'type' => 'base',
-                        'amount' => $baseSalary
-                    ]);
-
-                    // Simpan detail payroll (overtime)
-                    if ($overtimePayment > 0) {
-                        PayrollDetail::create([
-                            'payroll_id' => $payroll->id,
-                            'type_id' => null,
-                            'name' => 'Lembur',
-                            'type' => 'overtime',
-                            'amount' => $overtimePayment
-                        ]);
-                    }
-
-                    // Simpan detail tunjangan
-                    if (isset($data['allowances']) && is_array($data['allowances'])) {
-                        foreach ($data['allowances'] as $allowance) {
-                            if (!isset($allowance['code']) || !isset($allowance['name'])) {
-                                continue; // Skip jika data tidak lengkap
-                            }
-                            $type = AllowanceDeductionType::where('code', $allowance['code'])->first();
-                            $amount = $allowance['amount'] ?? 0; // Pastikan amount tidak null
-                            PayrollDetail::create([
-                                'payroll_id' => $payroll->id,
-                                'type_id' => $type ? $type->id : null,
-                                'name' => $allowance['name'],
-                                'type' => 'allowance',
-                                'amount' => $amount
-                            ]);
-                        }
-                    }
-
-                    // Simpan detail potongan
-                    if (isset($data['deductions']) && is_array($data['deductions'])) {
-                        foreach ($data['deductions'] as $deduction) {
-                            if (!isset($deduction['code']) || !isset($deduction['name'])) {
-                                continue; // Skip jika data tidak lengkap
-                            }
-                            $type = AllowanceDeductionType::where('code', $deduction['code'])->first();
-                            $amount = $deduction['amount'] ?? 0; // Pastikan amount tidak null
-                            PayrollDetail::create([
-                                'payroll_id' => $payroll->id,
-                                'type_id' => $type ? $type->id : null,
-                                'name' => $deduction['name'],
-                                'type' => 'deduction',
-                                'amount' => $amount
-                            ]);
-                        }
-                    }
-
-                    $successCount++;
-                } catch (\Exception $innerException) {
-                    // Log error untuk debugging
-                    Log::error("Error processing payroll for NIK: " . (isset($data['nik']) ?? 'unknown' ?? $data['nik']), [
-                        'error' => $innerException->getMessage(),
-                        'trace' => $innerException->getTraceAsString()
-                    ]);
-
-                    $errorMessages[] = "Error pada NIK " . (isset($data['nik']) ? $data['nik'] : 'unknown') . ": " . $innerException->getMessage();
-                }
-            }
-
-            // Jika tidak ada data yang berhasil disimpan, rollback transaksi
-            if ($successCount == 0) {
-                DB::rollback();
-                return redirect()->route('payroll.index')
-                    ->withErrors(['msg' => 'Tidak ada data yang berhasil disimpan. ' . implode(', ', $errorMessages)]);
-            }
-
-            DB::commit();
-
-            // Jika ada error tapi sebagian data berhasil disimpan
-            if (!empty($errorMessages)) {
-                return redirect()->route('payroll.index')
-                    ->with('warning', "Berhasil menyimpan {$successCount} data penggajian, tetapi terdapat beberapa error: " . implode(', ', $errorMessages));
-            }
-
-            return redirect()->route('payroll.index')
-                ->with('success', "Berhasil menyimpan {$successCount} data penggajian.");
-        } catch (\Exception $e) {
-            DB::rollback();
-            \Illuminate\Support\Facades\Log::error("Fatal error in storePayroll", [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return redirect()->route('payroll.index')
-                ->withErrors(['msg' => 'Terjadi kesalahan: ' . $e->getMessage()]);
-        }
+        return redirect()->route('payroll.index')->with('success', $result['message']);
     }
 
 

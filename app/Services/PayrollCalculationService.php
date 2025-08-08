@@ -25,11 +25,13 @@ class PayrollCalculationService
             ->with('linmas')
             ->get();
 
-        // Mendapatkan rate lembur dari database
-        $overtimeRate = SalaryRate::where('key', 'overtime_rate')->where('is_active', true)->first()->value ?? 10000;
+        // Mendapatkan semua tarif umum yang aktif sekali saja untuk efisiensi
+        $generalRates = SalaryRate::where('is_active', true)->pluck('value', 'key');
+        $overtimeRate = $generalRates->get('overtime_rate', 10000);
+        $defaultDailyRate = $generalRates->get('default_daily_rate', 100000);
 
         // Mengelompokkan kehadiran berdasarkan NIK
-        $payrollData = $attendances->groupBy('linmas.nik')->map(function ($attendanceGroup) use ($overtimeRate) {
+        $payrollData = $attendances->groupBy('linmas.nik')->map(function ($attendanceGroup) use ($overtimeRate, $defaultDailyRate) {
             // Jika tidak ada data linmas, lewati
             if (!$attendanceGroup->first() || !$attendanceGroup->first()->linmas) {
                 Log::warning("Skipping attendance group without linmas data");
@@ -69,7 +71,7 @@ class PayrollCalculationService
             if (!$positionRate) {
                 $positionRate = PositionSalaryRate::where('position', 'Perangkat Lainnya')->where('is_active', true)->first();
             }
-            $dailyRate = $positionRate->daily_rate ?? 100000;
+            $dailyRate = $positionRate->daily_rate ?? $defaultDailyRate;
 
             // Validasi tarif lembur
             if (!$overtimeRate || $overtimeRate <= 0) {

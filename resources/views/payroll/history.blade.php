@@ -41,17 +41,11 @@
                 </div>
 
                 <div>
-                    <label for="linmas_id" class="block text-sm font-medium text-gray-700 mb-1">Perangkat Desa</label>
-                    <select name="linmas_id" id="linmas_id"
-                        class="w-full border border-gray-300 rounded-md shadow-sm p-2">
-                        <option value="all">Semua Perangkat Desa</option>
-                        @foreach ($linmasOptions as $linmas)
-                            <option value="{{ $linmas->id }}"
-                                {{ request('linmas_id') == $linmas->id ? 'selected' : '' }}>
-                                {{ $linmas->nama }} ({{ $linmas->nama }})
-                            </option>
-                        @endforeach
-                    </select>
+                    <label for="linmas_nik" class="block text-sm font-medium text-gray-700 mb-1">NIK Perangkat Desa</label>
+                    <input type="text" name="linmas_nik" id="linmas_nik"
+                           class="w-full border border-gray-300 rounded-md shadow-sm p-2"
+                           placeholder="Masukkan NIK..."
+                           value="{{ request('linmas_nik') }}">
                 </div>
 
                 <div class="flex items-end">
