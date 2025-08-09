@@ -56,7 +56,7 @@
 
                     <div>
                         <label for="monthly_rate"
-                            class="block text-sm font-medium text-gray-700 mb-1">{{ __('Tarif Bulanan (Rp)') }} <span
+                            class="block text-sm font-medium text-gray-700 mb-1">{{ __('Gaji Pokok Bulanan (Rp)') }} <span
                                 class="text-red-500">*</span></label>
                         <input type="number" id="monthly_rate" name="monthly_rate"
                             value="{{ old('monthly_rate', $positionRate->monthly_rate) }}" min="0" step="1000"
@@ -65,33 +65,6 @@
                         @error('monthly_rate')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
-                    </div>
-
-                    <div>
-                        <label for="working_days"
-                            class="block text-sm font-medium text-gray-700 mb-1">{{ __('Jumlah Hari Kerja') }} <span
-                                class="text-red-500">*</span></label>
-                        <input type="number" id="working_days" name="working_days"
-                            value="{{ old('working_days', $positionRate->working_days) }}" min="1"
-                            max="31"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 @error('working_days') border-red-500 @enderror"
-                            required>
-                        @error('working_days')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-xs text-gray-500">Jumlah hari kerja dalam sebulan untuk menghitung tarif
-                            harian.</p>
-                    </div>
-
-                    <div>
-                        <label for="daily_rate_preview" class="block text-sm font-medium text-gray-700 mb-1">
-                            {{ __('Tarif Harian (Rp)') }}
-                        </label>
-                        <input type="text" id="daily_rate_preview"
-                            value="{{ number_format($positionRate->daily_rate, 0, ',', '.') }}" readonly
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500">
-                        <p class="mt-1 text-xs text-gray-500">Tarif harian akan dihitung otomatis saat menyimpan (Tarif
-                            Bulanan / Hari Kerja).</p>
                     </div>
 
                     <div>
@@ -125,33 +98,4 @@
             </form>
         </div>
     </div>
-
-    @push('scripts')
-        <script>
-            // Menghitung dan menampilkan tarif harian saat input berubah
-            document.addEventListener('DOMContentLoaded', function() {
-                const monthlyRateInput = document.getElementById('monthly_rate');
-                const workingDaysInput = document.getElementById('working_days');
-                const dailyRatePreview = document.getElementById('daily_rate_preview');
-
-                function calculateDailyRate() {
-                    const monthlyRate = parseFloat(monthlyRateInput.value) || 0;
-                    const workingDays = parseInt(workingDaysInput.value) || 22;
-
-                    if (monthlyRate > 0 && workingDays > 0) {
-                        const dailyRate = monthlyRate / workingDays;
-                        dailyRatePreview.value = dailyRate.toLocaleString('id-ID', {
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 0
-                        });
-                    } else {
-                        dailyRatePreview.value = '0';
-                    }
-                }
-
-                monthlyRateInput.addEventListener('input', calculateDailyRate);
-                workingDaysInput.addEventListener('input', calculateDailyRate);
-            });
-        </script>
-    @endpush
 </x-app-layout>

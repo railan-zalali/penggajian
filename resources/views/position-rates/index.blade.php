@@ -1,7 +1,7 @@
 `<x-app-layout>
     <div class="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">{{ __('Tarif Gaji Berdasarkan Jabatan') }}</h1>
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">{{ __('Tarif Gaji Bulanan Jabatan') }}</h1>
             <div class="flex space-x-2">
                 <a href="{{ route('settings.position-rates.create') }}"
                     class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition duration-300 flex items-center">
@@ -11,15 +11,6 @@
                             clip-rule="evenodd" />
                     </svg>
                     {{ __('Tambah Tarif Jabatan') }}
-                </a>
-                <a href="{{ route('settings.position-rates.recalculate') }}"
-                    class="bg-indigo-500 text-white px-4 py-2 rounded-lg shadow hover:bg-indigo-600 transition duration-300 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd"
-                            d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm1 2a1 1 0 000 2h6a1 1 0 100-2H7zm6 7a1 1 0 011 1v3a1 1 0 11-2 0v-3a1 1 0 011-1zm-3-2a1 1 0 100 2h.01a1 1 0 100-2H10zm-4 1a1 1 0 011-1 1 1 0 110 2v3a1 1 0 11-2 0v-3z"
-                            clip-rule="evenodd" />
-                    </svg>
-                    {{ __('Hitung Ulang Tarif Harian') }}
                 </a>
             </div>
         </div>
@@ -56,15 +47,7 @@
                                         </th>
                                         <th scope="col"
                                             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            {{ __('Tarif Bulanan') }}
-                                        </th>
-                                        <th scope="col"
-                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            {{ __('Tarif Harian') }}
-                                        </th>
-                                        <th scope="col"
-                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            {{ __('Hari Kerja') }}
+                                            {{ __('Gaji Pokok Bulanan') }}
                                         </th>
                                         <th scope="col"
                                             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -92,13 +75,6 @@
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="text-sm text-gray-900 font-medium">Rp
                                                     {{ number_format($rate->monthly_rate, 0, ',', '.') }}</div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="text-sm text-gray-900">Rp
-                                                    {{ number_format($rate->daily_rate, 0, ',', '.') }}</div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {{ $rate->working_days }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 @if ($rate->is_active)

@@ -235,46 +235,37 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td>Gaji Pokok ({{ $payrollData['total_days_worked'] }} hari kerja @ Rp {{ number_format($payrollData['daily_rate'] ?? 0, 0, ',', '.') }})</td>
-                        <td class="amount">Rp
-                            {{ number_format($payrollData['base_salary'], 0, ',', '.') }}</td>
+                        <td>Gaji Pokok Bulanan</td>
+                        <td class="amount">Rp {{ number_format($payrollData['monthly_salary'], 0, ',', '.') }}</td>
                     </tr>
 
-                    <!-- Tampilkan tunjangan jika ada -->
-                    @if (isset($payrollData['allowances']) && count($payrollData['allowances']) > 0)
-                        @foreach ($payrollData['allowances'] as $allowance)
-                            <tr>
-                                <td>{{ $allowance['name'] }}</td>
-                                <td class="amount">Rp {{ number_format(isset($allowance['amount']) ? $allowance['amount'] : ($allowance['value'] ?? 0), 0, ',', '.') }}</td>
-                            </tr>
-                        @endforeach
-                    @else
+                    @if (isset($payrollData['absence_deduction']) && $payrollData['absence_deduction'] > 0)
                         <tr>
-                            <td>Tunjangan Transportasi</td>
-                            <td class="amount">Rp 0</td>
-                        </tr>
-                        <tr>
-                            <td>Tunjangan Makan</td>
-                            <td class="amount">Rp 0</td>
+                            <td>Potongan Ketidakhadiran
+                                ({{ $payrollData['expected_working_days'] - $payrollData['actual_days_worked'] }} hari)
+                            </td>
+                            <td class="amount text-red-600">
+                                - Rp {{ number_format($payrollData['absence_deduction'], 0, ',', '.') }}
+                            </td>
                         </tr>
                     @endif
 
                     <tr>
-                        <td>Lembur ({{ $payrollData['total_overtime'] }} jam @ Rp {{ number_format($payrollData['overtime_rate'] ?? 0, 0, ',', '.') }})</td>
-                        <td class="amount">Rp {{ number_format($payrollData['overtime_payment'], 0, ',', '.') }}
-                        </td>
+                        <td>Lembur</td>
+                        <td class="amount">Rp {{ number_format($payrollData['overtime_payment'], 0, ',', '.') }}</td>
                     </tr>
 
-                    <!-- Total pendapatan kotor -->
+                    @foreach ($payrollData['allowances'] as $allowance)
+                        <tr>
+                            <td>{{ $allowance['name'] }}</td>
+                            <td class="amount">Rp {{ number_format($allowance['amount'], 0, ',', '.') }}</td>
+                        </tr>
+                    @endforeach
+
                     <tr class="total-row">
                         <td>Total Pendapatan Kotor</td>
                         <td class="amount">Rp
-                            {{ number_format(
-                                max(0, $payrollData['base_salary'] + $payrollData['overtime_payment'] + ($payrollData['total_allowances'] ?? 0)),
-                                0,
-                                ',',
-                                '.',
-                            ) }}
+                            {{ number_format($payrollData['base_salary'] + $payrollData['overtime_payment'] + $payrollData['total_allowances'], 0, ',', '.') }}
                         </td>
                     </tr>
                 </tbody>

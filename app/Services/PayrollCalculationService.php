@@ -11,126 +11,91 @@ use Illuminate\Support\Facades\Log;
 
 class PayrollCalculationService
 {
-    /**
-     * Calculate payroll for a given date range.
-     *
-     * @param Carbon $startDate
-     * @param Carbon $endDate
-     * @return \Illuminate\Support\Collection
-     */
     public function calculate(Carbon $startDate, Carbon $endDate)
     {
-        // Mengambil data kehadiran dalam rentang waktu
-        $attendances = Attendances::whereBetween('waktu', [$startDate, $endDate])
-            ->with('linmas')
-            ->get();
-
-        // Mendapatkan semua tarif umum yang aktif sekali saja untuk efisiensi
+        $allLinmas = \App\Models\Linmas::where('status', 'aktif')->get();
+        $attendances = Attendances::whereBetween('waktu', [$startDate, $endDate])->get()->groupBy('linmas_id');
         $generalRates = SalaryRate::where('is_active', true)->pluck('value', 'key');
         $overtimeRate = $generalRates->get('overtime_rate', 10000);
-        $defaultDailyRate = $generalRates->get('default_daily_rate', 100000);
 
-        // Mengelompokkan kehadiran berdasarkan NIK
-        $payrollData = $attendances->groupBy('linmas.nik')->map(function ($attendanceGroup) use ($overtimeRate, $defaultDailyRate) {
-            // Jika tidak ada data linmas, lewati
-            if (!$attendanceGroup->first() || !$attendanceGroup->first()->linmas) {
-                Log::warning("Skipping attendance group without linmas data");
-                return null;
+        // Calculate expected working days in the period (Mon-Sat)
+        $period = \Carbon\CarbonPeriod::create($startDate, $endDate);
+        $expectedWorkingDays = 0;
+        foreach ($period as $date) {
+            if (!$date->isSunday()) {
+                $expectedWorkingDays++;
             }
+        }
 
-            $linmas = $attendanceGroup->first()->linmas;
+        $payrollData = $allLinmas->map(function ($linmas) use ($attendances, $overtimeRate, $expectedWorkingDays, $startDate) {
             $linmasId = $linmas->id;
+            $linmasAttendances = $attendances->get($linmasId, collect());
 
-            // Hitung hari kerja dan lembur
+            // --- Calculate Actual Days Worked ---
             $daysWorkedMap = [];
-            $overtimeDaysMap = [];
-            $attendancesByDate = $attendanceGroup->groupBy(fn ($attendance) => date('Y-m-d', strtotime($attendance->waktu)));
-
+            $attendancesByDate = $linmasAttendances->groupBy(fn ($att) => Carbon::parse($att->waktu)->toDateString());
             foreach ($attendancesByDate as $date => $dailyAttendances) {
                 $hasEntry = $dailyAttendances->where('status', 'C/Masuk')->isNotEmpty();
                 $hasExit = $dailyAttendances->where('status', 'C/Keluar')->isNotEmpty();
-
-                if ($hasEntry && $hasExit && !isset($daysWorkedMap[$date])) {
+                if ($hasEntry && $hasExit) {
                     $daysWorkedMap[$date] = true;
                 }
-
-                $hasOvertimeEntry = $dailyAttendances->where('status', 'Lembur Masuk')->isNotEmpty();
-                $hasOvertimeExit = $dailyAttendances->where('status', 'Lembur Keluar')->isNotEmpty();
-
-                if ($hasOvertimeEntry && $hasOvertimeExit && !isset($overtimeDaysMap[$date])) {
-                    $overtimeDaysMap[$date] = true;
-                }
             }
+            $actualDaysWorked = count($daysWorkedMap);
 
-            $totalDaysWorked = count($daysWorkedMap);
-            $totalOvertime = count($overtimeDaysMap);
-
-            // Dapatkan tarif harian berdasarkan jabatan
+            // --- Get Monthly Salary ---
             $position = $linmas->jabatan ?? 'Perangkat Lainnya';
             $positionRate = PositionSalaryRate::where('position', $position)->where('is_active', true)->first();
             if (!$positionRate) {
                 $positionRate = PositionSalaryRate::where('position', 'Perangkat Lainnya')->where('is_active', true)->first();
             }
-            $dailyRate = $positionRate->daily_rate ?? $defaultDailyRate;
+            $monthlySalary = $positionRate->monthly_rate ?? 0;
 
-            // Validasi tarif lembur
-            if (!$overtimeRate || $overtimeRate <= 0) {
-                $overtimeRate = 10000;
+            // --- Calculate Prorated Absence Deduction ---
+            $absenceDeduction = 0;
+            if ($actualDaysWorked < $expectedWorkingDays) {
+                $absentDays = $expectedWorkingDays - $actualDaysWorked;
+                $dailyValue = $expectedWorkingDays > 0 ? ($monthlySalary / $expectedWorkingDays) : 0;
+                $absenceDeduction = round($absentDays * $dailyValue);
             }
 
-            // Hitung gaji
-            $baseSalary = $totalDaysWorked * $dailyRate;
-            $overtimePay = $totalOvertime * $overtimeRate;
+            $baseSalary = $monthlySalary - $absenceDeduction;
 
-            // Ambil dan hitung tunjangan
+            // --- Calculate Overtime ---
+            // (Assuming overtime logic remains the same for now, based on hours/days)
+            // For simplicity, let's assume 1 overtime day = 1 overtime payment unit
+            $overtimeDays = $linmasAttendances->filter(fn($att) => $att->status === 'Lembur Masuk')->count();
+            $overtimePay = $overtimeDays * $overtimeRate;
+
+            // --- Allowances and Deductions ---
             $allowances = LinmasAllowanceDeduction::getLinmasAllowances($linmasId);
             $totalAllowances = 0;
             $allowanceDetails = [];
-            $totalSalaryBeforeDeductions = $baseSalary + $overtimePay;
+            $salaryForPercentage = $baseSalary + $overtimePay;
 
             foreach ($allowances as $allowance) {
                 if (!$allowance->type) continue;
-                $amount = 0;
-                if ($allowance->type->calculation_type === 'fixed') {
-                    $amount = $allowance->value;
-                } elseif ($allowance->type->calculation_type === 'percentage') {
-                    $amount = floor(($allowance->value / 100) * $totalSalaryBeforeDeductions);
-                }
+                $amount = $allowance->type->calculation_type === 'fixed'
+                    ? $allowance->value
+                    : floor(($allowance->value / 100) * $salaryForPercentage);
                 $totalAllowances += $amount;
-                $allowanceDetails[] = [
-                    'name' => $allowance->type->name,
-                    'code' => $allowance->type->code,
-                    'amount' => $amount,
-                    'type' => $allowance->type->calculation_type,
-                    'percentage' => $allowance->type->calculation_type === 'percentage' ? $allowance->value . '%' : null
-                ];
+                $allowanceDetails[] = ['name' => $allowance->type->name, 'amount' => $amount];
             }
 
-            // Ambil dan hitung potongan
             $deductions = LinmasAllowanceDeduction::getLinmasDeductions($linmasId);
             $totalDeductions = 0;
             $deductionDetails = [];
-            $totalAvailableSalary = $totalSalaryBeforeDeductions + $totalAllowances;
+            $totalAvailableSalary = $salaryForPercentage + $totalAllowances;
 
             foreach ($deductions as $deduction) {
                 if (!$deduction->type) continue;
-                $amount = 0;
-                if ($deduction->type->calculation_type === 'fixed') {
-                    $amount = $deduction->value;
-                } elseif ($deduction->type->calculation_type === 'percentage') {
-                    $amount = floor(($deduction->value / 100) * $totalSalaryBeforeDeductions);
-                }
+                 $amount = $deduction->type->calculation_type === 'fixed'
+                    ? $deduction->value
+                    : floor(($deduction->value / 100) * $salaryForPercentage);
                 $amount = min($amount, $totalAvailableSalary - $totalDeductions);
                 if ($amount <= 0) continue;
-
                 $totalDeductions += $amount;
-                $deductionDetails[] = [
-                    'name' => $deduction->type->name,
-                    'code' => $deduction->type->code,
-                    'amount' => $amount,
-                    'type' => $deduction->type->calculation_type,
-                    'percentage' => $deduction->type->calculation_type === 'percentage' ? $deduction->value . '%' : null
-                ];
+                $deductionDetails[] = ['name' => $deduction->type->name, 'amount' => $amount];
             }
 
             $totalSalary = $baseSalary + $overtimePay + $totalAllowances - $totalDeductions;
@@ -139,8 +104,10 @@ class PayrollCalculationService
                 'nik' => $linmas->nik,
                 'nama' => $linmas->nama,
                 'linmas_id' => $linmasId,
-                'total_days_worked' => $totalDaysWorked,
-                'total_overtime' => $totalOvertime,
+                'monthly_salary' => $monthlySalary,
+                'expected_working_days' => $expectedWorkingDays,
+                'actual_days_worked' => $actualDaysWorked,
+                'absence_deduction' => $absenceDeduction,
                 'base_salary' => $baseSalary,
                 'overtime_payment' => $overtimePay,
                 'allowances' => $allowanceDetails,
@@ -148,10 +115,8 @@ class PayrollCalculationService
                 'deductions' => $deductionDetails,
                 'total_deductions' => $totalDeductions,
                 'total_wage' => max(0, $totalSalary),
-                'daily_rate' => $dailyRate,
-                'overtime_rate' => $overtimeRate,
             ];
-        })->filter()->values();
+        });
 
         return $payrollData;
     }
