@@ -83,7 +83,6 @@ class MonthClosingController extends Controller
         // Buat lock baru
         file_put_contents($lockFile, Carbon::now()->toDateTimeString());
 
-
         try {
             // Begin transaction
             DB::beginTransaction();
@@ -96,16 +95,39 @@ class MonthClosingController extends Controller
                 ->get();
 
             if ($payrolls->isEmpty()) {
+                // Hapus lock file jika tidak ada data
+                if (file_exists($lockFile)) {
+                    @unlink($lockFile);
+                }
                 return redirect()->route('month-closing.create')
                     ->with('error', 'Tidak ada data penggajian untuk periode ini.');
             }
 
-            // Check if there are any pending payments
+            // Validasi status penggajian
             $pendingPayrolls = $payrolls->where('payment_status', 'pending');
+            $cancelledPayrolls = $payrolls->where('payment_status', 'cancelled');
+            $paidPayrolls = $payrolls->where('payment_status', 'paid');
+            
+            // Jika semua penggajian dibatalkan, tidak bisa tutup bulan
+            if ($paidPayrolls->isEmpty() && $pendingPayrolls->isEmpty()) {
+                // Hapus lock file jika validasi gagal
+                if (file_exists($lockFile)) {
+                    @unlink($lockFile);
+                }
+                return redirect()->route('month-closing.create')
+                    ->with('error', "Tidak dapat menutup bulan karena semua penggajian dibatalkan. Harus ada minimal satu penggajian dengan status paid atau pending.")
+                    ->withInput();
+            }
+            
+            // Jika ada penggajian pending dan tidak diabaikan
             if ($pendingPayrolls->isNotEmpty() && !$request->has('ignore_pending')) {
                 $pendingCount = $pendingPayrolls->count();
                 $totalCount = $payrolls->count();
 
+                // Hapus lock file jika validasi gagal
+                if (file_exists($lockFile)) {
+                    @unlink($lockFile);
+                }
                 return redirect()->route('month-closing.create')
                     ->with('error', "Masih terdapat $pendingCount dari $totalCount gaji dengan status pending. Mohon selesaikan pembayaran terlebih dahulu atau centang 'Abaikan status pending' untuk melanjutkan.")
                     ->withInput();
@@ -133,18 +155,32 @@ class MonthClosingController extends Controller
             ]);
 
             // Update payrolls to link to this closing
-
             foreach ($payrolls as $payroll) {
                 $payroll->month_closing_id = $closing->id;
                 $payroll->save();
             }
 
             DB::commit();
+            
+            // Hapus lock file setelah berhasil
+            if (file_exists($lockFile)) {
+                @unlink($lockFile);
+            }
+            
             return redirect()->route('month-closing.index')->with('success', 'Periode berhasil ditutup.');
         } catch (\Exception $e) {
             DB::rollback();
-            @unlink($lockFile);
-            Log::error('Month closing failed: ' . $e->getMessage());
+            
+            // Hapus lock file jika terjadi error
+            if (file_exists($lockFile)) {
+                @unlink($lockFile);
+            }
+            
+            Log::error('Month closing failed: ' . $e->getMessage(), [
+                'year' => $year,
+                'month' => $month,
+                'trace' => $e->getTraceAsString()
+            ]);
             return redirect()->route('month-closing.create')
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
@@ -191,6 +227,9 @@ class MonthClosingController extends Controller
                 ->with('error', 'Hanya periode terakhir yang ditutup yang dapat dibuka kembali.');
         }
 
+        // Definisikan lockFile di awal untuk digunakan di catch block jika terjadi error
+        $lockFile = storage_path("app/month_closing_{$monthClosing->year}_{$monthClosing->month}.lock");
+
         DB::beginTransaction();
 
         try {
@@ -205,16 +244,25 @@ class MonthClosingController extends Controller
             DB::commit();
 
             // Remove lock file if exists
-            $lockFile = storage_path("app/month_closing_{$monthClosing->year}_{$monthClosing->month}.lock");
             if (file_exists($lockFile)) {
-                unlink($lockFile);
+                @unlink($lockFile);
             }
 
             return redirect()->route('month-closing.index')
                 ->with('success', 'Periode ' . $monthClosing->formatted_period . ' berhasil dibuka kembali.');
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('Month reopening failed: ' . $e->getMessage());
+            
+            // Hapus lock file jika terjadi error
+            if (file_exists($lockFile)) {
+                @unlink($lockFile);
+            }
+            
+            Log::error('Month reopening failed: ' . $e->getMessage(), [
+                'year' => $monthClosing->year,
+                'month' => $monthClosing->month,
+                'trace' => $e->getTraceAsString()
+            ]);
             return redirect()->route('month-closing.index')
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }

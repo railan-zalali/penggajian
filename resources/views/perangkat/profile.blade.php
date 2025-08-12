@@ -40,7 +40,8 @@
                                     <tr>
                                         <td class="py-3 text-sm font-medium text-gray-500">Tanggal Lahir:</td>
                                         <td class="py-3 text-sm text-gray-900">
-                                            {{ $linmas->tanggal_lahir ? $linmas->tanggal_lahir->format('d M Y') : '-' }}
+                                            {{-- {{ $linmas->tanggal_lahir }}
+                                            {{ $linmas->tanggal_lahir ? $linmas->tanggal_lahir->format('d M Y') : '-' }} --}}
                                         </td>
                                     </tr>
                                     <tr>
@@ -75,7 +76,7 @@
                                     <tr>
                                         <td class="py-3 text-sm font-medium text-gray-500">RT/RW:</td>
                                         <td class="py-3 text-sm text-gray-900">
-                                            @if($linmas->rt || $linmas->rw)
+                                            @if ($linmas->rt || $linmas->rw)
                                                 {{ $linmas->rt ?? '-' }}/{{ $linmas->rw ?? '-' }}
                                             @else
                                                 -
@@ -107,13 +108,15 @@
                                 <table class="min-w-full">
                                     <tr>
                                         <td class="py-3 text-sm font-medium text-gray-500 w-1/2">Posisi:</td>
-                                        <td class="py-3 text-sm text-gray-900">{{ $linmas->posisi ?? 'Perangkat Desa' }}</td>
+                                        <td class="py-3 text-sm text-gray-900">
+                                            {{ $linmas->posisi ?? 'Perangkat Desa' }}</td>
                                     </tr>
                                     <tr>
                                         <td class="py-3 text-sm font-medium text-gray-500">Status:</td>
                                         <td class="py-3 text-sm">
-                                            @if($linmas->status == 'aktif')
-                                                <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                                            @if ($linmas->status == 'aktif')
+                                                <span
+                                                    class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
                                                     Aktif
                                                 </span>
                                             @else
@@ -142,7 +145,7 @@
                                     <tr>
                                         <td class="py-3 text-sm font-medium text-gray-500">Masa Kerja:</td>
                                         <td class="py-3 text-sm text-gray-900">
-                                            @if($linmas->tanggal_bergabung)
+                                            @if ($linmas->tanggal_bergabung)
                                                 {{ $linmas->tanggal_bergabung->diffForHumans(null, true) }}
                                             @else
                                                 -
@@ -171,11 +174,13 @@
                             </div>
                             <div class="grid grid-cols-2 gap-4 text-center">
                                 <div>
-                                    <div class="text-xl font-semibold text-green-600">{{ $attendanceStats['thisMonth'] }}</div>
+                                    <div class="text-xl font-semibold text-green-600">
+                                        {{ $attendanceStats['thisMonth'] }}</div>
                                     <div class="text-xs text-gray-500">Bulan Ini</div>
                                 </div>
                                 <div>
-                                    <div class="text-xl font-semibold text-orange-600">{{ $attendanceStats['thisWeek'] }}</div>
+                                    <div class="text-xl font-semibold text-orange-600">
+                                        {{ $attendanceStats['thisWeek'] }}</div>
                                     <div class="text-xs text-gray-500">Minggu Ini</div>
                                 </div>
                             </div>
@@ -198,14 +203,14 @@
                             </div>
                             <div class="text-center">
                                 <div class="text-lg font-semibold text-green-600">
-                                    @if($payrollStats['lastPayroll'])
+                                    @if ($payrollStats['lastPayroll'])
                                         Rp {{ number_format($payrollStats['lastPayroll']->total_salary, 0, ',', '.') }}
                                     @else
                                         Rp 0
                                     @endif
                                 </div>
                                 <div class="text-xs text-gray-500">
-                                    @if($payrollStats['lastPayroll'])
+                                    @if ($payrollStats['lastPayroll'])
                                         Gaji {{ $payrollStats['lastPayroll']->payroll_date->format('M Y') }}
                                     @else
                                         Belum ada gaji
@@ -214,11 +219,13 @@
                             </div>
                             <div class="grid grid-cols-2 gap-4 text-center">
                                 <div>
-                                    <div class="text-sm font-semibold text-yellow-600">{{ $payrollStats['pending'] }}</div>
+                                    <div class="text-sm font-semibold text-yellow-600">{{ $payrollStats['pending'] }}
+                                    </div>
                                     <div class="text-xs text-gray-500">Pending</div>
                                 </div>
                                 <div>
-                                    <div class="text-sm font-semibold text-blue-600">{{ $payrollStats['totalPeriods'] }}</div>
+                                    <div class="text-sm font-semibold text-blue-600">
+                                        {{ $payrollStats['totalPeriods'] }}</div>
                                     <div class="text-xs text-gray-500">Total Periode</div>
                                 </div>
                             </div>
@@ -252,9 +259,10 @@
                                 <span class="text-sm text-gray-900">{{ $linmas->created_at->format('d M Y') }}</span>
                             </div>
                         </div>
-                        
+
                         <div class="mt-6 pt-4 border-t border-gray-200">
-                            <button class="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-300 text-sm font-medium">
+                            <button
+                                class="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-300 text-sm font-medium">
                                 Ubah Password
                             </button>
                         </div>

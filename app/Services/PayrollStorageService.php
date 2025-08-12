@@ -23,6 +23,7 @@ class PayrollStorageService
     public function store(array $payrollData, Carbon $endDate, bool $forceSave = false): array
     {
         if (empty($payrollData)) {
+            Log::error('Payroll data is empty');
             return ['success' => false, 'message' => 'Data penggajian tidak valid atau kosong.'];
         }
 
@@ -33,7 +34,14 @@ class PayrollStorageService
                 ->exists();
 
             if ($existingPayrolls) {
-                return ['success' => false, 'message' => 'Data penggajian untuk bulan ini sudah ada. Tidak dapat menyimpan duplikat.'];
+                Log::warning('Payroll data already exists for month ' . $endDate->month . ' year ' . $endDate->year);
+                return ['success' => false, 'message' => 'Data penggajian untuk bulan ini sudah ada. Tidak dapat menyimpan duplikat. Centang "Paksa Simpan" jika Anda yakin ingin menyimpan data ini.'];
+            }
+
+            // Validasi periode tutup bulan
+            if (\App\Models\MonthClosing::isMonthClosed($endDate->year, $endDate->month)) {
+                Log::error('Month ' . $endDate->format('F Y') . ' is already closed');
+                return ['success' => false, 'message' => 'Periode ' . $endDate->format('F Y') . ' sudah ditutup. Tidak dapat menyimpan data penggajian untuk periode yang sudah ditutup.'];
             }
         }
 
@@ -88,7 +96,6 @@ class PayrollStorageService
             }
 
             return ['success' => true, 'message' => $finalMessage];
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Fatal error in PayrollStorageService", [
@@ -107,40 +114,89 @@ class PayrollStorageService
      */
     private function storePayrollDetails(Payroll $payroll, array $data): void
     {
-        // Base salary
-        PayrollDetail::create([
-            'payroll_id' => $payroll->id, 'name' => 'Gaji Pokok', 'type' => 'base', 'amount' => $data['base_salary'] ?? 0
-        ]);
-
-        // Overtime
-        if (($data['overtime_payment'] ?? 0) > 0) {
-            PayrollDetail::create([
-                'payroll_id' => $payroll->id, 'name' => 'Lembur', 'type' => 'overtime', 'amount' => $data['overtime_payment']
-            ]);
-        }
-
-        // Allowances
-        foreach ($data['allowances'] ?? [] as $allowance) {
-            $type = AllowanceDeductionType::where('code', $allowance['code'])->first();
+        try {
+            // Base salary - pastikan nilai tidak negatif
             PayrollDetail::create([
                 'payroll_id' => $payroll->id,
-                'type_id' => $type ? $type->id : null,
-                'name' => $allowance['name'],
-                'type' => 'allowance',
-                'amount' => $allowance['amount'] ?? 0
+                'name' => 'Gaji Pokok',
+                'type' => 'base',
+                'amount' => max(0, $data['base_salary'] ?? 0)
             ]);
-        }
 
-        // Deductions
-        foreach ($data['deductions'] ?? [] as $deduction) {
-            $type = AllowanceDeductionType::where('code', $deduction['code'])->first();
-            PayrollDetail::create([
+            // Overtime - pastikan nilai tidak negatif
+            if (($data['overtime_payment'] ?? 0) > 0) {
+                PayrollDetail::create([
+                    'payroll_id' => $payroll->id,
+                    'name' => 'Lembur',
+                    'type' => 'overtime',
+                    'amount' => max(0, $data['overtime_payment'])
+                ]);
+            }
+
+            // Allowances
+            foreach ($data['allowances'] ?? [] as $allowance) {
+                // Pastikan jumlah valid dan nama ada
+                if (!isset($allowance['name'])) {
+                    continue;
+                }
+
+                $amount = max(0, $allowance['amount'] ?? 0);
+                if ($amount <= 0) continue; // Lewati jika jumlah 0 atau negatif
+
+                // Cari tipe tunjangan berdasarkan nama dan kode
+                $typeId = null;
+                if (!empty($allowance['code'])) {
+                    $type = AllowanceDeductionType::where('code', $allowance['code'])
+                        ->where('type', 'allowance')
+                        ->first();
+                    $typeId = $type ? $type->id : null;
+                }
+
+                PayrollDetail::create([
+                    'payroll_id' => $payroll->id,
+                    'allowance_deduction_type_id' => $typeId,
+                    'name' => $allowance['name'],
+                    'type' => 'allowance',
+                    'amount' => $amount,
+                    'description' => $allowance['description'] ?? $allowance['name']
+                ]);
+            }
+
+            // Deductions
+            foreach ($data['deductions'] ?? [] as $deduction) {
+                // Pastikan jumlah valid dan nama ada
+                if (!isset($deduction['name'])) {
+                    continue;
+                }
+
+                $amount = max(0, $deduction['amount'] ?? 0);
+                if ($amount <= 0) continue; // Lewati jika jumlah 0 atau negatif
+
+                // Cari tipe potongan berdasarkan nama dan kode
+                $typeId = null;
+                if (!empty($deduction['code'])) {
+                    $type = AllowanceDeductionType::where('code', $deduction['code'])
+                        ->where('type', 'deduction')
+                        ->first();
+                    $typeId = $type ? $type->id : null;
+                }
+
+                PayrollDetail::create([
+                    'payroll_id' => $payroll->id,
+                    'allowance_deduction_type_id' => $typeId,
+                    'name' => $deduction['name'],
+                    'type' => 'deduction',
+                    'amount' => $amount,
+                    'description' => $deduction['description'] ?? $deduction['name']
+                ]);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Error storing payroll details", [
                 'payroll_id' => $payroll->id,
-                'type_id' => $type ? $type->id : null,
-                'name' => $deduction['name'],
-                'type' => 'deduction',
-                'amount' => $deduction['amount'] ?? 0
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
+            throw $e; // Re-throw untuk ditangani di level atas
         }
     }
 }

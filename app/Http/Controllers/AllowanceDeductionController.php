@@ -88,7 +88,7 @@ class AllowanceDeductionController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return redirect()->route('settings.allowances-deductions.edit', $allowanceDeduction->id)
+            return redirect()->route('settings.allowances-deductions.edit', $allowanceDeduction)
                 ->withErrors($validator)
                 ->withInput();
         }

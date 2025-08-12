@@ -115,14 +115,47 @@ class PayrollWorkflowController extends Controller
                 'user_id' => Auth::id()
             ]);
 
-            // Cek apakah transisi status valid
-            if (!$payroll->canTransitionTo($targetStatus)) {
+            // Validasi peran pengguna berdasarkan status target
+            $userRoles = Auth::user()->roles->pluck('name')->toArray();
+            $requiredRoles = [
+                'verified' => ['admin', 'verifier'],
+                'approved' => ['admin', 'approver'],
+                'processed' => ['admin', 'finance'],
+                'completed' => ['admin', 'finance'],
+            ];
+            
+            // Cek apakah pengguna memiliki peran yang diperlukan untuk status ini
+            if (isset($requiredRoles[$targetStatus]) && !empty($requiredRoles[$targetStatus])) {
+                $hasRequiredRole = false;
+                foreach ($userRoles as $role) {
+                    if (in_array($role, $requiredRoles[$targetStatus])) {
+                        $hasRequiredRole = true;
+                        break;
+                    }
+                }
+                
+                if (!$hasRequiredRole) {
+                    \Illuminate\Support\Facades\Log::warning("Unauthorized status change attempt", [
+                        'payroll_id' => $payroll->id,
+                        'user_id' => Auth::id(),
+                        'user_roles' => $userRoles,
+                        'required_roles' => $requiredRoles[$targetStatus],
+                        'target_status' => $targetStatus
+                    ]);
+                    return back()->with('error', "Anda tidak memiliki hak akses untuk mengubah status menjadi '{$this->getStatusLabel($targetStatus)}'");
+                }
+            }
+            
+            // Validasi konsistensi status menggunakan metode baru
+            [$isValid, $errorMessage] = $payroll->validateStatusConsistency($targetStatus, Auth::id());
+            if (!$isValid) {
                 \Illuminate\Support\Facades\Log::warning("Invalid status transition", [
                     'payroll_id' => $payroll->id,
                     'current_status' => $currentStatus,
-                    'target_status' => $targetStatus
+                    'target_status' => $targetStatus,
+                    'error' => $errorMessage
                 ]);
-                return back()->with('error', "Tidak dapat mengubah status dari '{$payroll->status_text}' ke '{$this->getStatusLabel($targetStatus)}'");
+                return back()->with('error', $errorMessage);
             }
 
             // Update status
@@ -191,22 +224,36 @@ class PayrollWorkflowController extends Controller
 
     /**
      * Generate laporan alur proses
+     * 
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\Response
      */
     public function report(Request $request)
     {
         try {
+            // Validasi input
+            $validated = $request->validate([
+                'month' => 'nullable|integer|min:1|max:12',
+                'year' => 'nullable|integer|min:2000|max:' . (date('Y') + 1),
+                'export' => 'nullable|in:pdf,excel'
+            ]);
+            
             $query = Payroll::with(['linmas', 'verifier', 'approver']);
 
             // Filter berdasarkan periode
-            if ($request->has('month') && $request->has('year')) {
-                $query->whereMonth('payroll_date', $request->month)
-                    ->whereYear('payroll_date', $request->year);
+            if ($request->filled('month')) {
+                $query->whereMonth('payroll_date', $request->month);
+            }
+            
+            if ($request->filled('year')) {
+                $query->whereYear('payroll_date', $request->year);
             }
 
             // Log untuk debugging
             \Illuminate\Support\Facades\Log::info("Generating workflow report", [
                 'month_filter' => $request->month ?? 'all',
                 'year_filter' => $request->year ?? 'all',
+                'export_format' => $request->export ?? 'none',
                 'user_id' => \Illuminate\Support\Facades\Auth::id()
             ]);
 
@@ -228,8 +275,38 @@ class PayrollWorkflowController extends Controller
                 }, array_keys($summary)),
                 'data' => array_values($summary)
             ];
+            
+            // Tambahkan data detail untuk tabel
+            $payrolls = $query->orderBy('payroll_date', 'desc')->get();
+            $detailData = [
+                'draft' => $payrolls->where('processing_status', 'draft'),
+                'verified' => $payrolls->where('processing_status', 'verified'),
+                'calculated' => $payrolls->where('processing_status', 'calculated'),
+                'approved' => $payrolls->where('processing_status', 'approved'),
+                'processed' => $payrolls->where('processing_status', 'processed'),
+                'completed' => $payrolls->where('processing_status', 'completed'),
+                'rejected' => $payrolls->where('processing_status', 'rejected'),
+            ];
+            
+            // Jika request adalah untuk export
+            if ($request->filled('export')) {
+                if ($request->export === 'pdf') {
+                    return $this->exportReportToPdf($summary, $chartData, $detailData, $request->month, $request->year);
+                } elseif ($request->export === 'excel') {
+                    return $this->exportReportToExcel($summary, $detailData, $request->month, $request->year);
+                }
+            }
 
-            return view('payroll.workflow.report', compact('summary', 'chartData'));
+            // Tampilkan view dengan data
+            $monthName = $request->filled('month') ? \Carbon\Carbon::create(null, $request->month, 1)->format('F') : null;
+            $yearValue = $request->year;
+            
+            return view('payroll.workflow.report', compact('summary', 'chartData', 'detailData', 'monthName', 'yearValue'));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::warning("Validation error in workflow report", [
+                'errors' => $e->errors()
+            ]);
+            return back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("Error generating workflow report", [
                 'error' => $e->getMessage(),
@@ -253,8 +330,70 @@ class PayrollWorkflowController extends Controller
                 }, array_keys($summary)),
                 'data' => array_values($summary)
             ];
+            
+            $detailData = [
+                'draft' => collect(),
+                'verified' => collect(),
+                'calculated' => collect(),
+                'approved' => collect(),
+                'processed' => collect(),
+                'completed' => collect(),
+                'rejected' => collect(),
+            ];
 
-            return view('payroll.workflow.report', compact('summary', 'chartData'))->with('error', 'Terjadi kesalahan saat membuat laporan: ' . $e->getMessage());
+            return view('payroll.workflow.report', compact('summary', 'chartData', 'detailData'))
+                ->with('error', 'Terjadi kesalahan saat membuat laporan: ' . $e->getMessage());
         }
+    }
+    
+    /**
+     * Export laporan ke PDF
+     * 
+     * @param array $summary Data ringkasan status
+     * @param array $chartData Data untuk chart
+     * @param array $detailData Data detail per status
+     * @param int|null $month Bulan filter
+     * @param int|null $year Tahun filter
+     * @return \Illuminate\Http\Response
+     */
+    private function exportReportToPdf(array $summary, array $chartData, array $detailData, ?int $month = null, ?int $year = null)
+    {
+        // Gunakan package PDF yang tersedia (misalnya dompdf)
+        $pdf = \PDF::loadView('payroll.workflow.report_pdf', compact('summary', 'chartData', 'detailData', 'month', 'year'));
+        
+        $filename = 'laporan_status_penggajian';
+        if ($month && $year) {
+            $filename .= "_{$year}_" . str_pad($month, 2, '0', STR_PAD_LEFT);
+        } elseif ($year) {
+            $filename .= "_{$year}";
+        }
+        $filename .= '.pdf';
+        
+        return $pdf->download($filename);
+    }
+    
+    /**
+     * Export laporan ke Excel
+     * 
+     * @param array $summary Data ringkasan status
+     * @param array $detailData Data detail per status
+     * @param int|null $month Bulan filter
+     * @param int|null $year Tahun filter
+     * @return \Illuminate\Http\Response
+     */
+    private function exportReportToExcel(array $summary, array $detailData, ?int $month = null, ?int $year = null)
+    {
+        // Gunakan package Excel yang tersedia (misalnya maatwebsite/excel)
+        $export = new \App\Exports\PayrollStatusExport($summary, $detailData);
+        
+        $filename = 'laporan_status_penggajian';
+        if ($month && $year) {
+            $filename .= "_{$year}_" . str_pad($month, 2, '0', STR_PAD_LEFT);
+        } elseif ($year) {
+            $filename .= "_{$year}";
+        }
+        $filename .= '.xlsx';
+        
+        return \Excel::download($export, $filename);
     }
 }

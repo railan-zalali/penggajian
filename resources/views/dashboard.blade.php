@@ -63,7 +63,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg overflow-hidden shadow-md border-b-4 border-amber-500">
+                {{-- <div class="bg-white rounded-lg overflow-hidden shadow-md border-b-4 border-amber-500">
                     <div class="p-5">
                         <div class="flex items-center">
                             <div class="rounded-md bg-amber-100 p-3">
@@ -79,7 +79,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> --}}
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

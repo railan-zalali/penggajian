@@ -136,9 +136,9 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a href="{{ route('settings.allowances-deductions.edit', $allowance->id) }}"
+                                <a href="{{ route('settings.allowances-deductions.edit', $allowance) }}"
                                     class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                                <form action="{{ route('settings.allowances-deductions.destroy', $allowance->id) }}"
+                                <form action="{{ route('settings.allowances-deductions.destroy', $allowance) }}"
                                     method="POST" class="inline-block">
                                     @csrf
                                     @method('DELETE')
@@ -234,9 +234,9 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a href="{{ route('settings.allowances-deductions.edit', $deduction->id) }}"
+                                <a href="{{ route('settings.allowances-deductions.edit', $deduction) }}"
                                     class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                                <form action="{{ route('settings.allowances-deductions.destroy', $deduction->id) }}"
+                                <form action="{{ route('settings.allowances-deductions.destroy', $deduction) }}"
                                     method="POST" class="inline-block">
                                     @csrf
                                     @method('DELETE')

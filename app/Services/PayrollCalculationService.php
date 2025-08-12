@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Attendances;
+use App\Models\Linmas;
 use App\Models\LinmasAllowanceDeduction;
 use App\Models\PositionSalaryRate;
 use App\Models\SalaryRate;
@@ -13,8 +14,16 @@ class PayrollCalculationService
 {
     public function calculate(Carbon $startDate, Carbon $endDate)
     {
-        $allLinmas = \App\Models\Linmas::where('status', 'aktif')->get();
-        $attendances = Attendances::whereBetween('waktu', [$startDate, $endDate])->get()->groupBy('linmas_id');
+        // Ambil hanya Linmas yang memiliki data kehadiran dalam periode yang dipilih
+        $attendances = Attendances::whereBetween('waktu', [$startDate, $endDate])->get();
+        $linmasIdsWithAttendance = $attendances->pluck('linmas_id')->unique()->filter()->toArray();
+
+        // Filter Linmas yang aktif dan memiliki data kehadiran
+        $allLinmas = Linmas::where('status', 'aktif')
+            ->whereIn('id', $linmasIdsWithAttendance)
+            ->get();
+
+        $attendances = $attendances->groupBy('linmas_id');
         $generalRates = SalaryRate::where('is_active', true)->pluck('value', 'key');
         $overtimeRate = $generalRates->get('overtime_rate', 10000);
 
@@ -27,21 +36,32 @@ class PayrollCalculationService
             }
         }
 
+        // Pastikan expected working days tidak nol untuk menghindari division by zero
+        $expectedWorkingDays = max(1, $expectedWorkingDays);
+
         $payrollData = $allLinmas->map(function ($linmas) use ($attendances, $overtimeRate, $expectedWorkingDays, $startDate) {
             $linmasId = $linmas->id;
             $linmasAttendances = $attendances->get($linmasId, collect());
 
             // --- Calculate Actual Days Worked ---
             $daysWorkedMap = [];
-            $attendancesByDate = $linmasAttendances->groupBy(fn ($att) => Carbon::parse($att->waktu)->toDateString());
+            $attendancesByDate = $linmasAttendances->groupBy(fn($att) => Carbon::parse($att->waktu)->toDateString());
             foreach ($attendancesByDate as $date => $dailyAttendances) {
-                $hasEntry = $dailyAttendances->where('status', 'C/Masuk')->isNotEmpty();
-                $hasExit = $dailyAttendances->where('status', 'C/Keluar')->isNotEmpty();
-                if ($hasEntry && $hasExit) {
+                // Periksa status kehadiran dengan lebih fleksibel
+                $hasEntry = $dailyAttendances->whereIn('status', ['C/Masuk', 'Hadir', 'Masuk'])->isNotEmpty();
+                $hasExit = $dailyAttendances->whereIn('status', ['C/Keluar', 'Keluar'])->isNotEmpty();
+
+                // Jika ada status 'Hadir' tanpa pasangan masuk/keluar, tetap dihitung hadir
+                $isPresent = $dailyAttendances->where('status', 'Hadir')->isNotEmpty();
+
+                if (($hasEntry && $hasExit) || $isPresent) {
                     $daysWorkedMap[$date] = true;
                 }
             }
             $actualDaysWorked = count($daysWorkedMap);
+
+            // Pastikan actual days worked tidak melebihi expected working days
+            $actualDaysWorked = min($actualDaysWorked, $expectedWorkingDays);
 
             // --- Get Monthly Salary ---
             $position = $linmas->jabatan ?? 'Perangkat Lainnya';
@@ -61,44 +81,78 @@ class PayrollCalculationService
 
             $baseSalary = $monthlySalary - $absenceDeduction;
 
-            // --- Calculate Overtime ---
-            // (Assuming overtime logic remains the same for now, based on hours/days)
-            // For simplicity, let's assume 1 overtime day = 1 overtime payment unit
-            $overtimeDays = $linmasAttendances->filter(fn($att) => $att->status === 'Lembur Masuk')->count();
-            $overtimePay = $overtimeDays * $overtimeRate;
+            // Menghapus perhitungan lembur sesuai permintaan
+            $overtimeHours = 0;
+            $overtimePay = 0;
 
             // --- Allowances and Deductions ---
             $allowances = LinmasAllowanceDeduction::getLinmasAllowances($linmasId);
             $totalAllowances = 0;
             $allowanceDetails = [];
-            $salaryForPercentage = $baseSalary + $overtimePay;
+            $salaryForPercentage = max(0, $baseSalary + $overtimePay); // Pastikan tidak negatif
 
             foreach ($allowances as $allowance) {
                 if (!$allowance->type) continue;
-                $amount = $allowance->type->calculation_type === 'fixed'
-                    ? $allowance->value
-                    : floor(($allowance->value / 100) * $salaryForPercentage);
-                $totalAllowances += $amount;
-                $allowanceDetails[] = ['name' => $allowance->type->name, 'amount' => $amount];
+
+                // Pastikan nilai dan tipe perhitungan valid
+                $value = is_numeric($allowance->value) ? $allowance->value : 0;
+                $calculationType = $allowance->type->calculation_type ?? 'fixed';
+
+                // Hitung jumlah tunjangan
+                if ($calculationType === 'percentage' && $salaryForPercentage > 0) {
+                    $amount = floor(($value / 100) * $salaryForPercentage);
+                } else {
+                    $amount = $value; // Fixed amount
+                }
+
+                // Pastikan jumlah tidak negatif
+                $amount = max(0, $amount);
+
+                if ($amount > 0) {
+                    $totalAllowances += $amount;
+                    $allowanceDetails[] = [
+                        'name' => $allowance->type->name ?? 'Tunjangan',
+                        'amount' => $amount,
+                        'code' => $allowance->type->code ?? null
+                    ];
+                }
             }
 
             $deductions = LinmasAllowanceDeduction::getLinmasDeductions($linmasId);
             $totalDeductions = 0;
             $deductionDetails = [];
-            $totalAvailableSalary = $salaryForPercentage + $totalAllowances;
+            $totalAvailableSalary = max(0, $salaryForPercentage + $totalAllowances);
 
             foreach ($deductions as $deduction) {
                 if (!$deduction->type) continue;
-                 $amount = $deduction->type->calculation_type === 'fixed'
-                    ? $deduction->value
-                    : floor(($deduction->value / 100) * $salaryForPercentage);
+
+                // Pastikan nilai dan tipe perhitungan valid
+                $value = is_numeric($deduction->value) ? $deduction->value : 0;
+                $calculationType = $deduction->type->calculation_type ?? 'fixed';
+
+                // Hitung jumlah potongan
+                if ($calculationType === 'percentage' && $salaryForPercentage > 0) {
+                    $amount = floor(($value / 100) * $salaryForPercentage);
+                } else {
+                    $amount = $value; // Fixed amount
+                }
+
+                // Pastikan tidak memotong lebih dari yang tersedia
                 $amount = min($amount, $totalAvailableSalary - $totalDeductions);
-                if ($amount <= 0) continue;
-                $totalDeductions += $amount;
-                $deductionDetails[] = ['name' => $deduction->type->name, 'amount' => $amount];
+                $amount = max(0, $amount); // Pastikan tidak negatif
+
+                if ($amount > 0) {
+                    $totalDeductions += $amount;
+                    $deductionDetails[] = [
+                        'name' => $deduction->type->name ?? 'Potongan',
+                        'amount' => $amount,
+                        'code' => $deduction->type->code ?? null
+                    ];
+                }
             }
 
-            $totalSalary = $baseSalary + $overtimePay + $totalAllowances - $totalDeductions;
+            // Pastikan total gaji tidak negatif
+            $totalSalary = max(0, $baseSalary + $overtimePay + $totalAllowances - $totalDeductions);
 
             return [
                 'nik' => $linmas->nik,
@@ -114,7 +168,10 @@ class PayrollCalculationService
                 'total_allowances' => $totalAllowances,
                 'deductions' => $deductionDetails,
                 'total_deductions' => $totalDeductions,
-                'total_wage' => max(0, $totalSalary),
+                'total_wage' => $totalSalary,
+                'working_days' => $expectedWorkingDays, // Tambahkan untuk kompatibilitas dengan view
+                'attendance_days' => $actualDaysWorked, // Tambahkan untuk kompatibilitas dengan view
+                'total_days_worked' => $actualDaysWorked, // Tambahkan untuk kompatibilitas dengan PayrollController
             ];
         });
 

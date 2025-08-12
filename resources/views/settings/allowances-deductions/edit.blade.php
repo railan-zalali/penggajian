@@ -44,7 +44,7 @@
                     {{ $allowanceDeduction->name }}</h2>
             </div>
 
-            <form action="{{ route('settings.allowances-deductions.update', $allowanceDeduction->id) }}" method="POST"
+            <form action="{{ route('settings.allowances-deductions.update', $allowanceDeduction) }}" method="POST"
                 class="p-6">
                 @csrf
                 @method('PUT')

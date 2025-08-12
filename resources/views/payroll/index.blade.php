@@ -70,7 +70,7 @@
                                 required>
                         </div>
                         <div class="flex items-end">
-                            <button type="submit"
+                            <button type="submit" id="calculateBtn" onclick="showCalculateLoading()"
                                 class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out flex items-center justify-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20"
                                     fill="currentColor">
@@ -78,7 +78,7 @@
                                         d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
                                         clip-rule="evenodd" />
                                 </svg>
-                                Hitung Gaji
+                                <span id="calculateBtnText">Hitung Gaji</span>
                             </button>
                         </div>
                     </form>
@@ -108,22 +108,24 @@
                         class="p-6 bg-indigo-600 text-white flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
                         <h2 class="text-2xl font-bold">Periode: {{ $startDate->format('F Y') }} -
                             {{ $endDate->format('F Y') }}</h2>
-                        <form action="{{ route('payroll.exportPdf') }}" method="POST">
-                            @csrf
-                            <input type="hidden" name="payroll_data" value="{{ json_encode($payrollData) }}">
-                            <input type="hidden" name="start_date" value="{{ $startDate }}">
-                            <input type="hidden" name="end_date" value="{{ $endDate }}">
-                            <button type="submit"
-                                class="bg-white text-indigo-600 hover:bg-indigo-100 font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20"
-                                    fill="currentColor">
-                                    <path fill-rule="evenodd"
-                                        d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                                Cetak Laporan PDF
-                            </button>
-                        </form>
+                        <div class="flex space-x-2">
+                            <form action="{{ route('payroll.exportPdf') }}" method="POST" id="exportPdfForm">
+                                @csrf
+                                <input type="hidden" name="payroll_data" value="{{ json_encode($payrollData) }}">
+                                <input type="hidden" name="start_date" value="{{ $startDate }}">
+                                <input type="hidden" name="end_date" value="{{ $endDate }}">
+                                <button type="button" onclick="exportPdf()"
+                                    class="bg-white text-indigo-600 hover:bg-indigo-100 font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20"
+                                        fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    Cetak Laporan PDF
+                                </button>
+                            </form>
+                        </div>
                     </div>
 
                     <div class="overflow-x-auto">
@@ -145,9 +147,7 @@
                                     <th
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Potongan Absen</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Lembur</th>
+                                    <!-- Kolom lembur dihapus sesuai permintaan -->
                                     <th
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Tunjangan</th>
@@ -165,34 +165,35 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach ($payrollData as $payroll)
                                     <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $payroll['nik'] }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $payroll['nama'] }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Rp {{ number_format($payroll['monthly_salary'], 0, ',', '.') }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $payroll['actual_days_worked'] }} / {{ $payroll['expected_working_days'] }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">- Rp {{ number_format($payroll['absence_deduction'], 0, ',', '.') }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">+ Rp {{ number_format($payroll['overtime_payment'], 0, ',', '.') }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">+ Rp {{ number_format($payroll['total_allowances'], 0, ',', '.') }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">- Rp {{ number_format($payroll['total_deductions'], 0, ',', '.') }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">Rp {{ number_format($payroll['total_wage'], 0, ',', '.') }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            <form action="{{ route('payroll.exportSlip', $payroll['nik']) }}"
-                                                method="POST" class="inline-block">
-                                                @csrf
-                                                <input type="hidden" name="payroll_data"
-                                                    value="{{ json_encode($payroll) }}">
-                                                <input type="hidden" name="start_date" value="{{ $startDate }}">
-                                                <input type="hidden" name="end_date" value="{{ $endDate }}">
-                                                <button type="submit"
-                                                    class="text-indigo-600 hover:text-indigo-900 flex items-center">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1"
-                                                        viewBox="0 0 20 20" fill="currentColor">
-                                                        <path fill-rule="evenodd"
-                                                            d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z"
-                                                            clip-rule="evenodd" />
-                                                    </svg>
-                                                    Cetak Slip Gaji
-                                                </button>
-                                            </form>
+                                            {{ $payroll['nik'] }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {{ $payroll['nama'] }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Rp
+                                            {{ number_format($payroll['monthly_salary'], 0, ',', '.') }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {{ $payroll['actual_days_worked'] }} /
+                                            {{ $payroll['expected_working_days'] }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">- Rp
+                                            {{ number_format($payroll['absence_deduction'], 0, ',', '.') }}</td>
+                                        <!-- Kolom lembur dihapus sesuai permintaan -->
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">+ Rp
+                                            {{ number_format($payroll['total_allowances'], 0, ',', '.') }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">- Rp
+                                            {{ number_format($payroll['total_deductions'], 0, ',', '.') }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">Rp
+                                            {{ number_format($payroll['total_wage'], 0, ',', '.') }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            <button type="button" onclick="exportSlip('{{ $payroll['nik'] }}')"
+                                                class="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded-md text-xs transition duration-150 ease-in-out flex items-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1"
+                                                    viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd"
+                                                        d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z"
+                                                        clip-rule="evenodd" />
+                                                </svg>
+                                                Cetak Slip
+                                            </button>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -202,12 +203,13 @@
 
                     <!-- Form untuk menyimpan penggajian -->
                     <div class="p-6 bg-gray-50">
-                        <form action="{{ route('payroll.store') }}" method="POST" id="storePayrollForm">
+                        <form action="{{ route('payroll.store') }}" method="POST" id="storePayrollForm"
+                            onsubmit="return confirmSave()">
                             @csrf
                             <input type="hidden" name="payroll_data" value="{{ json_encode($payrollData) }}">
                             <input type="hidden" name="start_date" value="{{ $startDate }}">
                             <input type="hidden" name="end_date" value="{{ $endDate }}">
-                            <button type="submit"
+                            <button type="submit" id="savePayrollBtn"
                                 class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md transition duration-150 ease-in-out flex items-center justify-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20"
                                     fill="currentColor">
@@ -236,5 +238,123 @@
             @endif
         </div>
     </div>
+
+    <script>
+        function confirmSave() {
+            return confirm(
+                'Apakah Anda yakin ingin menyimpan data penggajian ini? Data yang sudah disimpan tidak dapat diubah.');
+        }
+
+        function showCalculateLoading() {
+            const button = document.getElementById('calculateBtn');
+            const buttonText = document.getElementById('calculateBtnText');
+            const originalText = buttonText.innerHTML;
+
+            // Simpan teks asli di atribut data
+            button.setAttribute('data-original-text', originalText);
+
+
+
+            // Form akan di-submit secara normal
+            return true;
+        }
+
+        function exportPdf() {
+            // Tampilkan loading indicator
+            const button = document.querySelector('#exportPdfForm button');
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML =
+                '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memproses...';
+
+            // Submit form
+            document.getElementById('exportPdfForm').submit();
+
+            // Reset button setelah beberapa detik
+            setTimeout(() => {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }, 3000);
+        }
+
+        function exportSlip(nik) {
+            try {
+                // Temukan tombol yang diklik
+                const buttons = document.querySelectorAll('button[onclick="exportSlip(\'' + nik + '\')"');
+                let clickedButton = null;
+
+                if (buttons.length > 0) {
+                    clickedButton = buttons[0];
+                    // Simpan teks asli dan nonaktifkan tombol
+                    const originalText = clickedButton.innerHTML;
+                    clickedButton.disabled = true;
+                    clickedButton.innerHTML =
+                        '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memproses...';
+
+                    // Reset tombol setelah beberapa detik
+                    setTimeout(() => {
+                        clickedButton.disabled = false;
+                        clickedButton.innerHTML = originalText;
+                    }, 3000);
+                }
+
+                // Buat form dinamis
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ route('payroll.exportSlip') }}';
+                form.target = '_blank';
+
+                // Tambahkan CSRF token
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = '_token';
+                csrfToken.value = '{{ csrf_token() }}';
+                form.appendChild(csrfToken);
+
+                // Tambahkan NIK
+                const nikInput = document.createElement('input');
+                nikInput.type = 'hidden';
+                nikInput.name = 'nik';
+                nikInput.value = nik;
+                form.appendChild(nikInput);
+
+                // Tambahkan data payroll dan tanggal
+                const payrollData = document.createElement('input');
+                payrollData.type = 'hidden';
+                payrollData.name = 'payroll_data';
+                payrollData.value = document.querySelector('input[name="payroll_data"]').value;
+                form.appendChild(payrollData);
+
+                const startDate = document.createElement('input');
+                startDate.type = 'hidden';
+                startDate.name = 'start_date';
+                startDate.value = document.querySelector('input[name="start_date"]').value;
+                form.appendChild(startDate);
+
+                const endDate = document.createElement('input');
+                endDate.type = 'hidden';
+                endDate.name = 'end_date';
+                endDate.value = document.querySelector('input[name="end_date"]').value;
+                form.appendChild(endDate);
+
+                // Tambahkan form ke body, submit, dan hapus
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+            } catch (error) {
+                console.error('Error exporting slip:', error);
+                alert('Terjadi kesalahan saat mencetak slip gaji. Silakan coba lagi.');
+
+                // Reset tombol jika terjadi kesalahan
+                const buttons = document.querySelectorAll('button[onclick="exportSlip(\'' + nik + '\')"');
+                if (buttons.length > 0) {
+                    const clickedButton = buttons[0];
+                    clickedButton.disabled = false;
+                    clickedButton.innerHTML =
+                        '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd" /></svg> Cetak Slip';
+                }
+            }
+        }
+    </script>
 
 </x-app-layout>

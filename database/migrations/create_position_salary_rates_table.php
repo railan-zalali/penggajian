@@ -34,7 +34,7 @@ return new class extends Migration
         // Insert default values
         DB::table('position_salary_rates')->insert([
             [
-                'position' => 'Kades',
+                'position' => 'Kepala Desa',
                 'monthly_rate' => 3000000.00,
                 'daily_rate' => 136363.64, // 3jt / 22 hari
                 'working_days' => $workingDays,
@@ -44,7 +44,7 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'position' => 'Sekdes',
+                'position' => 'Sekretaris Desa',
                 'monthly_rate' => 2500000.00,
                 'daily_rate' => 113636.36, // 2.5jt / 22 hari
                 'working_days' => $workingDays,
@@ -54,21 +54,91 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'position' => 'Bendahara',
+                'position' => 'Kaur Keuangan',
                 'monthly_rate' => 2200000.00,
                 'daily_rate' => 100000.00, // 2.2jt / 22 hari
                 'working_days' => $workingDays,
-                'description' => 'Tarif gaji untuk Bendahara Desa',
+                'description' => 'Tarif gaji untuk Kaur Keuangan Desa',
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'position' => 'Perangkat Lainnya',
+                'position' => 'Kasi Pelayanan',
                 'monthly_rate' => 2200000.00,
                 'daily_rate' => 100000.00, // 2.2jt / 22 hari
                 'working_days' => $workingDays,
-                'description' => 'Tarif gaji untuk Perangkat Desa lainnya',
+                'description' => 'Tarif gaji untuk Kasi Pelayanan Desa',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'position' => 'Kasi Pemerintahan',
+                'monthly_rate' => 2200000.00,
+                'daily_rate' => 100000.00, // 2.2jt / 22 hari
+                'working_days' => $workingDays,
+                'description' => 'Tarif gaji untuk Kasi Pemerintahan Desa',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'position' => 'Kasi Kesejahteraan',
+                'monthly_rate' => 2200000.00,
+                'daily_rate' => 100000.00, // 2.2jt / 22 hari
+                'working_days' => $workingDays,
+                'description' => 'Tarif gaji untuk Kasi Kesejahteraan Desa',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'position' => 'Kaur Perencanaan',
+                'monthly_rate' => 2200000.00,
+                'daily_rate' => 100000.00, // 2.2jt / 22 hari
+                'working_days' => $workingDays,
+                'description' => 'Tarif gaji untuk Kaur Perencanaan Desa',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'position' => 'Kaur Tata Usaha Dan Umum',
+                'monthly_rate' => 2200000.00,
+                'daily_rate' => 100000.00, // 2.2jt / 22 hari
+                'working_days' => $workingDays,
+                'description' => 'Tarif gaji untuk Kaur Tata Usaha Dan Umum Desa',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'position' => 'Kepala Dusun 1',
+                'monthly_rate' => 2200000.00,
+                'daily_rate' => 100000.00, // 2.2jt / 22 hari
+                'working_days' => $workingDays,
+                'description' => 'Tarif gaji untuk Kepala Dusun 1 Desa',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'position' => 'Kepala Dusun 2',
+                'monthly_rate' => 2200000.00,
+                'daily_rate' => 100000.00, // 2.2jt / 22 hari
+                'working_days' => $workingDays,
+                'description' => 'Tarif gaji untuk Kepala Dusun 2 Desa',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'position' => 'Kepala Dusun 3',
+                'monthly_rate' => 2200000.00,
+                'daily_rate' => 100000.00, // 2.2jt / 22 hari
+                'working_days' => $workingDays,
+                'description' => 'Tarif gaji untuk Kepala Dusun 3 Desa',
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),

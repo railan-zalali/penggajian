@@ -1,19 +1,37 @@
 <x-app-layout>
     <div class="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">Tambah Tarif Baru</h1>
-            <a href="{{ route('settings.rates.index') }}"
-                class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition duration-300 flex items-center">
+            <h1 class="text-3xl font-bold text-gray-800">Konfigurasi Tarif</h1>
+            <a href="{{ route('settings.rates.create') }}"
+                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd"
-                        d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                        d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
                         clip-rule="evenodd" />
                 </svg>
-                Kembali
+                Tambah Tarif Baru
             </a>
         </div>
 
-        @if ($errors->any())
+        @if (session('success'))
+            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded shadow" role="alert">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                            fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm">{{ session('success') }}</p>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if (session('error'))
             <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow" role="alert">
                 <div class="flex">
                     <div class="flex-shrink-0">
@@ -25,61 +43,99 @@
                         </svg>
                     </div>
                     <div class="ml-3">
-                        <p class="text-sm font-medium">Terdapat beberapa kesalahan:</p>
-                        <ul class="mt-1 list-disc list-inside text-sm">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
+                        <p class="text-sm">{{ session('error') }}</p>
                     </div>
                 </div>
             </div>
         @endif
 
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
-            <form action="{{ route('settings.rates.store') }}" method="POST" class="p-6">
-                @csrf
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div>
-                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nama Tarif</label>
-                        <input type="text" name="name" id="name" value="{{ old('name') }}"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                            required>
-                        <p class="mt-1 text-xs text-gray-500">Contoh: Tarif Harian, Tarif Lembur, dll.</p>
-                    </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Nama</th>
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Kunci</th>
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Nilai</th>
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Deskripsi</th>
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status</th>
+                            <th scope="col"
+                                class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @forelse ($rates as $rate)
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">{{ $rate->name }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-500">{{ $rate->key }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">Rp {{ number_format($rate->value, 0, ',', '.') }}</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-500">{{ $rate->description }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @if ($rate->is_active)
+                                        <span
+                                            class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            Aktif
+                                        </span>
+                                    @else
+                                        <span
+                                            class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                            Tidak Aktif
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <a href="{{ route('settings.rates.edit', $rate) }}"
+                                        class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
+                                    <form action="{{ route('settings.rates.destroy', $rate) }}" method="POST"
+                                        class="inline-block">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-red-600 hover:text-red-900"
+                                            onclick="return confirm('Anda yakin ingin menghapus tarif ini?')">Hapus</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                                    Tidak ada data tarif
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-                    <div>
-                        <label for="key" class="block text-sm font-medium text-gray-700 mb-1">Kunci Tarif</label>
-                        <input type="text" name="key" id="key" value="{{ old('key') }}"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                            required>
-                        <p class="mt-1 text-xs text-gray-500">Kunci unik, gunakan huruf kecil tanpa spasi (snake_case).
-                            Contoh: daily_rate</p>
-                    </div>
-
-                    <div>
-                        <label for="value" class="block text-sm font-medium text-gray-700 mb-1">Nilai Tarif
-                            (Rp)</label>
-                        <input type="number" name="value" id="value" value="{{ old('value') }}" min="0"
-                            step="0.01"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                            required>
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
-                        <textarea name="description" id="description" rows="3"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">{{ old('description') }}</textarea>
-                    </div>
-                </div>
-
-                <div class="flex justify-end">
-                    <button type="submit"
-                        class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition duration-300">
-                        Simpan Tarif
-                    </button>
-                </div>
-            </form>
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Informasi Penggunaan</h2>
+            <div class="text-gray-600">
+                <p class="mb-4">Tarif digunakan untuk menghitung komponen gaji perangkat desa:</p>
+                <ul class="list-disc list-inside mb-4 ml-4">
+                    <li class="mb-2"><strong>Tarif Harian (daily_rate)</strong>: Digunakan untuk menghitung gaji berdasarkan kehadiran.</li>
+                    <li class="mb-2"><strong>Tarif Lembur (overtime_rate)</strong>: Digunakan untuk menghitung kompensasi lembur.</li>
+                </ul>
+                <p>Perubahan nilai tarif akan berlaku untuk perhitungan gaji pada periode berikutnya.</p>
+            </div>
         </div>
     </div>
 </x-app-layout>

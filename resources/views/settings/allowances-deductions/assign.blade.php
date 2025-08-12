@@ -30,7 +30,10 @@
                     <div>
                         <p class="text-sm text-gray-600">Tempat, Tanggal Lahir</p>
                         <p class="text-lg font-medium">{{ $linmas->tempat_lahir }},
-                            {{ $linmas->tanggal_lahir->format('d F Y') }}</p>
+                            {{-- {{ $linmas->tanggal_lahir-> }} --}}
+                            {{ $linmas->tanggal_lahir }}
+
+                        </p>
                     </div>
                     <div>
                         <p class="text-sm text-gray-600">Alamat</p>

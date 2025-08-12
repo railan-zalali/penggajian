@@ -2,6 +2,15 @@
     <div class="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row justify-between items-center mb-6">
             <h1 class="text-4xl font-bold text-gray-800 mb-4 md:mb-0">Riwayat Penggajian</h1>
+            <button type="button" onclick="openCompleteAllModal()"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clip-rule="evenodd" />
+                </svg>
+                Selesaikan Semua Penggajian
+            </button>
         </div>
 
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -41,11 +50,11 @@
                 </div>
 
                 <div>
-                    <label for="linmas_nik" class="block text-sm font-medium text-gray-700 mb-1">NIK Perangkat Desa</label>
+                    <label for="linmas_nik" class="block text-sm font-medium text-gray-700 mb-1">NIK Perangkat
+                        Desa</label>
                     <input type="text" name="linmas_nik" id="linmas_nik"
-                           class="w-full border border-gray-300 rounded-md shadow-sm p-2"
-                           placeholder="Masukkan NIK..."
-                           value="{{ request('linmas_nik') }}">
+                        class="w-full border border-gray-300 rounded-md shadow-sm p-2" placeholder="Masukkan NIK..."
+                        value="{{ request('linmas_nik') }}">
                 </div>
 
                 <div class="flex items-end">
@@ -130,7 +139,7 @@
                                 {{ $payroll->linmas->nama ?? 'N/A' }}
                             </td>
                             <td class="py-3 px-6 text-left">
-                                {{ $payroll->linmas->nama ?? 'N/A' }}
+                                {{ $payroll->linmas->nik ?? 'N/A' }}
                             </td>
                             <td class="py-3 px-6 text-right font-medium">
                                 Rp {{ number_format($payroll->total_salary, 0, ',', '.') }}
@@ -219,26 +228,17 @@
                                         </svg>
                                     </button>
 
-                                    <a href="{{ route('payroll.exportSlip', $payroll->linmas->nama) }}"
-                                        onclick="event.preventDefault(); document.getElementById('export-slip-form-{{ $payroll->id }}').submit();"
-                                        class="bg-green-500 text-white px-3 py-1 rounded-lg shadow hover:bg-green-600 transition duration-300 ease-in-out transform hover:-translate-y-1">
+                                    <a href="{{ route('payroll.exportSlip', $payroll->id) }}"
+                                        class="bg-green-500 text-white px-3 py-1 rounded-lg shadow hover:bg-green-600 transition duration-300 ease-in-out transform hover:-translate-y-1 flex items-center space-x-1"
+                                        target="_blank">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20"
                                             fill="currentColor">
                                             <path fill-rule="evenodd"
                                                 d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
                                                 clip-rule="evenodd" />
                                         </svg>
+                                        <span>Cetak Slip Gaji</span>
                                     </a>
-
-                                    <form id="export-slip-form-{{ $payroll->id }}"
-                                        action="{{ route('payroll.exportSlip', $payroll->linmas->nama) }}"
-                                        method="POST" class="hidden">
-                                        @csrf
-                                        <input type="hidden" name="start_date"
-                                            value="{{ $payroll->payroll_date->startOfMonth() }}">
-                                        <input type="hidden" name="end_date"
-                                            value="{{ $payroll->payroll_date->endOfMonth() }}">
-                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -342,6 +342,78 @@
             </div>
         </div>
 
+        <!-- Complete All Payroll Modal -->
+        <div id="completeAllModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title"
+            role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div
+                    class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <form id="completeAllForm" action="{{ route('payroll.completeAll') }}" method="POST">
+                        @csrf
+                        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                            <div class="sm:flex sm:items-start">
+                                <div
+                                    class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                        Selesaikan Semua Penggajian
+                                    </h3>
+                                    <div class="mt-2">
+                                        <p class="text-sm text-gray-500">
+                                            Apakah Anda yakin ingin menyelesaikan semua penggajian yang masih berstatus
+                                            pending?
+                                            Tindakan ini akan mengubah status semua penggajian menjadi "Dibayar".
+                                        </p>
+                                    </div>
+                                    <div class="mt-4 space-y-4">
+                                        <div>
+                                            <label for="payment_method_all"
+                                                class="block text-sm font-medium text-gray-700">Metode Pembayaran</label>
+                                            <input type="text" id="payment_method_all" name="payment_method"
+                                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                                placeholder="Transfer Bank, Tunai, dll" required>
+                                        </div>
+                                        <div>
+                                            <label for="payment_reference_all"
+                                                class="block text-sm font-medium text-gray-700">Referensi
+                                                Pembayaran</label>
+                                            <input type="text" id="payment_reference_all" name="payment_reference"
+                                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                                placeholder="No. Referensi, Kwitansi, dll">
+                                        </div>
+                                        <div>
+                                            <label for="notes_all"
+                                                class="block text-sm font-medium text-gray-700">Catatan</label>
+                                            <textarea id="notes_all" name="notes" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                                                rows="3"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                            <button type="submit"
+                                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm">
+                                Selesaikan Semua
+                            </button>
+                            <button type="button" onclick="closeCompleteAllModal()"
+                                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                                Batal
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 // Handle month_year select
@@ -376,6 +448,16 @@
 
             function closePaymentModal() {
                 const modal = document.getElementById('paymentModal');
+                modal.classList.add('hidden');
+            }
+
+            function openCompleteAllModal() {
+                const modal = document.getElementById('completeAllModal');
+                modal.classList.remove('hidden');
+            }
+
+            function closeCompleteAllModal() {
+                const modal = document.getElementById('completeAllModal');
                 modal.classList.add('hidden');
             }
         </script>

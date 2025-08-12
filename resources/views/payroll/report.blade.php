@@ -10,7 +10,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: #333;
-            max-width: 1200px;
+            max-width: 100%;
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f5f5;
@@ -21,6 +21,8 @@
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+            width: 100%;
         }
 
         h1 {
@@ -45,7 +47,8 @@
             margin-top: 20px;
             background-color: #fff;
             border-radius: 8px;
-            overflow: hidden;
+            overflow-x: auto;
+            display: block;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
         }
 
@@ -97,6 +100,14 @@
             padding-bottom: 5px;
         }
 
+        /* Perbaikan untuk tabel detail */
+        .detail-table {
+            width: 100%;
+            display: block;
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
         @media print {
             body {
                 background-color: #ffffff;
@@ -104,10 +115,13 @@
 
             .container {
                 box-shadow: none;
+                overflow-x: visible;
             }
 
             table {
                 box-shadow: none;
+                display: table;
+                overflow-x: visible;
             }
         }
     </style>
@@ -202,7 +216,7 @@
             <!-- Allowances Table -->
             @if (isset($data['allowances']) && count($data['allowances']) > 0)
                 <h4 style="margin-bottom: 10px; color: #27ae60;">Tunjangan</h4>
-                <table style="margin-bottom: 20px;">
+                <table class="detail-table">
                     <thead>
                         <tr>
                             <th>Nama Tunjangan</th>
@@ -235,7 +249,7 @@
             <!-- Deductions Table -->
             @if (isset($data['deductions']) && count($data['deductions']) > 0)
                 <h4 style="margin-bottom: 10px; color: #e74c3c;">Potongan</h4>
-                <table style="margin-bottom: 30px;">
+                <table class="detail-table">
                     <thead>
                         <tr>
                             <th>Nama Potongan</th>

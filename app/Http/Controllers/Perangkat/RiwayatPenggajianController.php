@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Penggajian;
 use App\Models\DetailPenggajian;
 use App\Models\Linmas;
+use App\Models\Payroll;
+use App\Models\PayrollDetail;
 use App\Models\Perangkat;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-use PDF;
 
 class RiwayatPenggajianController extends Controller
 {
@@ -68,7 +70,7 @@ class RiwayatPenggajianController extends Controller
         $perangkat = Perangkat::where('user_id', $user->id)->firstOrFail();
 
         // Ambil data penggajian
-        $penggajian = Penggajian::with(['detail', 'verifikator', 'pemberi_persetujuan'])
+        $penggajian = Payroll::with(['detail', 'verifikator', 'pemberi_persetujuan'])
             ->where('id', $id)
             ->where('perangkat_id', $perangkat->id)
             ->firstOrFail();
@@ -86,19 +88,19 @@ class RiwayatPenggajianController extends Controller
         $perangkat = Perangkat::where('user_id', $user->id)->firstOrFail();
 
         // Ambil data penggajian
-        $penggajian = Penggajian::with(['detail', 'verifikator', 'pemberi_persetujuan'])
+        $penggajian = Payroll::with(['detail', 'verifikator', 'pemberi_persetujuan'])
             ->where('id', $id)
             ->where('perangkat_id', $perangkat->id)
             ->firstOrFail();
 
         // Ambil detail tunjangan dan potongan
-        $tunjangan = DetailPenggajian::getTunjangan($penggajian->id);
-        $potongan = DetailPenggajian::getPotongan($penggajian->id);
-        $total_tunjangan = DetailPenggajian::getTotalTunjangan($penggajian->id);
-        $total_potongan = DetailPenggajian::getTotalPotongan($penggajian->id);
+        $tunjangan = PayrollDetail::getTunjangan($penggajian->id);
+        $potongan = PayrollDetail::getPotongan($penggajian->id);
+        $total_tunjangan = PayrollDetail::getTotalTunjangan($penggajian->id);
+        $total_potongan = PayrollDetail::getTotalPotongan($penggajian->id);
 
         // Generate PDF
-        $pdf = PDF::loadView('perangkat.pdf.slip-gaji', compact(
+        $pdf = Pdf::loadView('perangkat.pdf.slip-gaji', compact(
             'penggajian',
             'perangkat',
             'tunjangan',
@@ -130,7 +132,7 @@ class RiwayatPenggajianController extends Controller
         $tahun = $request->input('tahun', date('Y'));
 
         // Ambil data penggajian untuk tahun yang dipilih
-        $penggajian = Penggajian::where('perangkat_id', $perangkat->id)
+        $penggajian = Payroll::where('perangkat_id', $perangkat->id)
             ->whereYear('tanggal_penggajian', $tahun)
             ->orderBy('tanggal_penggajian', 'asc')
             ->get();
@@ -146,7 +148,9 @@ class RiwayatPenggajianController extends Controller
                 'total_potongan' => 0,
                 'total_gaji' => 0,
                 'status_pembayaran' => null,
-                'id' => null
+                'id' => null,
+                'bulan_nama' => Carbon::create($tahun, $i, 1)->format('F'),
+                'ada_data' => false
             ];
         }
 
@@ -154,25 +158,39 @@ class RiwayatPenggajianController extends Controller
         foreach ($penggajian as $gaji) {
             $bulan = Carbon::parse($gaji->tanggal_penggajian)->month;
 
-            $data_bulanan[$bulan] = [
-                'total_hari_hadir' => $gaji->total_hari_hadir,
-                'gaji_pokok' => $gaji->gaji_pokok,
-                'pembayaran_lembur' => $gaji->pembayaran_lembur,
-                'total_tunjangan' => DetailPenggajian::getTotalTunjangan($gaji->id),
-                'total_potongan' => DetailPenggajian::getTotalPotongan($gaji->id),
-                'total_gaji' => $gaji->total_gaji,
-                'status_pembayaran' => $gaji->status_pembayaran,
-                'id' => $gaji->id
-            ];
+            // Hanya hitung gaji yang sudah dibayar atau disetujui
+            if ($gaji->status_pembayaran == 'paid' || $gaji->status_pembayaran == 'approved') {
+                $data_bulanan[$bulan] = [
+                    'total_hari_hadir' => $gaji->total_hari_hadir ?? 0,
+                    'gaji_pokok' => $gaji->gaji_pokok ?? 0,
+                    'pembayaran_lembur' => $gaji->pembayaran_lembur ?? 0,
+                    'total_tunjangan' => PayrollDetail::getTotalTunjangan($gaji->id) ?? 0,
+                    'total_potongan' => PayrollDetail::getTotalPotongan($gaji->id) ?? 0,
+                    'total_gaji' => $gaji->total_gaji ?? 0,
+                    'status_pembayaran' => $gaji->status_pembayaran,
+                    'id' => $gaji->id,
+                    'bulan_nama' => Carbon::parse($gaji->tanggal_penggajian)->format('F'),
+                    'ada_data' => true
+                ];
+            }
         }
 
-        // Hitung ringkasan tahunan
+        // Hitung ringkasan tahunan (hanya dari data yang valid)
         $ringkasan = [
             'total_gaji_pokok' => array_sum(array_column($data_bulanan, 'gaji_pokok')),
             'total_lembur' => array_sum(array_column($data_bulanan, 'pembayaran_lembur')),
             'total_tunjangan' => array_sum(array_column($data_bulanan, 'total_tunjangan')),
             'total_potongan' => array_sum(array_column($data_bulanan, 'total_potongan')),
-            'total_gaji' => array_sum(array_column($data_bulanan, 'total_gaji'))
+            'total_gaji' => array_sum(array_column($data_bulanan, 'total_gaji')),
+            'bulan_terbayar' => count(array_filter($data_bulanan, function ($item) {
+                return $item['ada_data'];
+            })),
+            'rata_rata_gaji' => count(array_filter($data_bulanan, function ($item) {
+                return $item['ada_data'];
+            })) > 0 ?
+                array_sum(array_column($data_bulanan, 'total_gaji')) / count(array_filter($data_bulanan, function ($item) {
+                    return $item['ada_data'];
+                })) : 0
         ];
 
         return view('perangkat.ringkasan-tahunan', compact(
@@ -193,7 +211,7 @@ class RiwayatPenggajianController extends Controller
         $perangkat = Perangkat::where('user_id', $user->id)->firstOrFail();
 
         // Ambil data penggajian untuk tahun yang dipilih
-        $penggajian = Penggajian::where('perangkat_id', $perangkat->id)
+        $penggajian = Payroll::where('perangkat_id', $perangkat->id)
             ->whereYear('tanggal_penggajian', $tahun)
             ->orderBy('tanggal_penggajian', 'asc')
             ->get();
@@ -207,7 +225,9 @@ class RiwayatPenggajianController extends Controller
                 'pembayaran_lembur' => 0,
                 'total_tunjangan' => 0,
                 'total_potongan' => 0,
-                'total_gaji' => 0
+                'total_gaji' => 0,
+                'bulan_nama' => Carbon::create($tahun, $i, 1)->format('F'),
+                'ada_data' => false
             ];
         }
 
@@ -215,23 +235,37 @@ class RiwayatPenggajianController extends Controller
         foreach ($penggajian as $gaji) {
             $bulan = Carbon::parse($gaji->tanggal_penggajian)->month;
 
-            $data_bulanan[$bulan] = [
-                'total_hari_hadir' => $gaji->total_hari_hadir,
-                'gaji_pokok' => $gaji->gaji_pokok,
-                'pembayaran_lembur' => $gaji->pembayaran_lembur,
-                'total_tunjangan' => DetailPenggajian::getTotalTunjangan($gaji->id),
-                'total_potongan' => DetailPenggajian::getTotalPotongan($gaji->id),
-                'total_gaji' => $gaji->total_gaji
-            ];
+            // Hanya hitung gaji yang sudah dibayar atau disetujui
+            if ($gaji->status_pembayaran == 'paid' || $gaji->status_pembayaran == 'approved') {
+                $data_bulanan[$bulan] = [
+                    'total_hari_hadir' => $gaji->total_hari_hadir ?? 0,
+                    'gaji_pokok' => $gaji->gaji_pokok ?? 0,
+                    'pembayaran_lembur' => $gaji->pembayaran_lembur ?? 0,
+                    'total_tunjangan' => PayrollDetail::getTotalTunjangan($gaji->id) ?? 0,
+                    'total_potongan' => PayrollDetail::getTotalPotongan($gaji->id) ?? 0,
+                    'total_gaji' => $gaji->total_gaji ?? 0,
+                    'bulan_nama' => Carbon::parse($gaji->tanggal_penggajian)->format('F'),
+                    'ada_data' => true
+                ];
+            }
         }
 
-        // Hitung ringkasan tahunan
+        // Hitung ringkasan tahunan (hanya dari data yang valid)
         $ringkasan = [
             'total_gaji_pokok' => array_sum(array_column($data_bulanan, 'gaji_pokok')),
             'total_lembur' => array_sum(array_column($data_bulanan, 'pembayaran_lembur')),
             'total_tunjangan' => array_sum(array_column($data_bulanan, 'total_tunjangan')),
             'total_potongan' => array_sum(array_column($data_bulanan, 'total_potongan')),
-            'total_gaji' => array_sum(array_column($data_bulanan, 'total_gaji'))
+            'total_gaji' => array_sum(array_column($data_bulanan, 'total_gaji')),
+            'bulan_terbayar' => count(array_filter($data_bulanan, function ($item) {
+                return $item['ada_data'];
+            })),
+            'rata_rata_gaji' => count(array_filter($data_bulanan, function ($item) {
+                return $item['ada_data'];
+            })) > 0 ?
+                array_sum(array_column($data_bulanan, 'total_gaji')) / count(array_filter($data_bulanan, function ($item) {
+                    return $item['ada_data'];
+                })) : 0
         ];
 
         // Generate PDF

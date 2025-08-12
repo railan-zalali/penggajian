@@ -71,10 +71,10 @@
                             class="absolute z-50 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
                             style="display: none;">
                             <div class="rounded-md ring-1 ring-black ring-opacity-5 py-1 bg-white">
-                                <a href="{{ route('settings.rates.index') }}"
+                                {{-- <a href="{{ route('settings.rates.index') }}"
                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('settings.rates.*') ? 'bg-gray-100' : '' }}">
                                     Tarif Dasar
-                                </a>
+                                </a> --}}
                                 <a href="{{ route('settings.position-rates.index') }}"
                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('settings.position-rates.*') ? 'bg-gray-100' : '' }}">
                                     Tarif Jabatan
@@ -179,9 +179,9 @@
                     </div>
                 </div>
                 <div x-show="settingsOpen" class="pl-5 space-y-1">
-                    <x-responsive-nav-link :href="route('settings.rates.index')" :active="request()->routeIs('settings.rates.*')">
+                    {{-- <x-responsive-nav-link :href="route('settings.rates.index')" :active="request()->routeIs('settings.rates.*')">
                         {{ __('Tarif Dasar') }}
-                    </x-responsive-nav-link>
+                    </x-responsive-nav-link> --}}
                     <x-responsive-nav-link :href="route('settings.position-rates.index')" :active="request()->routeIs('settings.position-rates.*')">
                         {{ __('Tarif Jabatan') }}
                     </x-responsive-nav-link>

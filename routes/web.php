@@ -67,7 +67,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/', [PayrollController::class, 'index'])->name('index');
         Route::post('/calculate', [PayrollController::class, 'calculatePayroll'])->name('calculate');
         Route::post('/export-pdf', [PayrollController::class, 'exportPdf'])->name('exportPdf');
-        Route::post('/export-slip/{nik}', [PayrollController::class, 'exportSlip'])->name('exportSlip');
+        Route::get('/export-pdf', [PayrollController::class, 'exportPdf'])->name('exportPdfGet'); // Tambah route GET untuk export PDF
+        Route::post('/export-slip/{nik?}', [PayrollController::class, 'exportSlip'])->name('exportSlip'); // Buat parameter nik opsional
+        Route::get('/export-slip/{id}', [PayrollController::class, 'exportSlip'])->name('exportSlipGet'); // Tambah route GET untuk export slip
         Route::post('/store', [PayrollController::class, 'storePayroll'])->name('store');
     });
 
@@ -77,6 +79,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::put('/{payroll}/status', [PayrollHistoryController::class, 'updateStatus'])->name('update-status');
         Route::post('/monthly-report', [PayrollHistoryController::class, 'monthlyReport'])->name('monthly-report');
     });
+
+    // Payroll Complete All
+    Route::post('/payroll/complete-all', [PayrollHistoryController::class, 'completeAll'])->name('payroll.completeAll');
 
     // Month Closing
     Route::resource('month-closing', MonthClosingController::class)->except(['destroy']);
@@ -117,6 +122,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             'edit' => 'allowances-deductions.edit',
             'update' => 'allowances-deductions.update',
             'destroy' => 'allowances-deductions.destroy'
+        ])->parameters([
+            'allowances-deductions' => 'allowanceDeduction'
         ]);
     });
 

@@ -268,7 +268,7 @@
                         <!-- Update Status Form -->
                         @if (count($validStatusTransitions) > 0)
                             <form action="{{ route('payroll.workflow.update-status', $payroll->id) }}" method="POST"
-                                class="mt-6">
+                                class="mt-6" id="updateStatusForm" onsubmit="return confirmStatusChange()">
                                 @csrf
                                 @method('PUT')
 
@@ -292,9 +292,13 @@
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
                                 </div>
 
-                                <button type="submit"
-                                    class="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition duration-300">
-                                    Update Status
+                                <button type="submit" id="updateStatusBtn"
+                                    class="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition duration-300 flex items-center justify-center">
+                                    <span id="updateStatusBtnText">Update Status</span>
+                                    <svg id="updateStatusSpinner" class="animate-spin ml-2 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
                                 </button>
                             </form>
                         @else
@@ -307,4 +311,26 @@
             </div>
         </div>
     </div>
+    <script>
+        function confirmStatusChange() {
+            const statusSelect = document.getElementById('status');
+            const selectedStatus = statusSelect.options[statusSelect.selectedIndex].text;
+            
+            if (confirm(`Apakah Anda yakin ingin mengubah status menjadi "${selectedStatus}"? Tindakan ini tidak dapat dibatalkan.`)) {
+                showUpdateLoading();
+                return true;
+            }
+            return false;
+        }
+        
+        function showUpdateLoading() {
+            const button = document.getElementById('updateStatusBtn');
+            const buttonText = document.getElementById('updateStatusBtnText');
+            const spinner = document.getElementById('updateStatusSpinner');
+            
+            buttonText.textContent = 'Memproses...';
+            spinner.classList.remove('hidden');
+            button.disabled = true;
+        }
+    </script>
 </x-app-layout>

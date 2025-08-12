@@ -63,9 +63,17 @@ class Payroll extends Model
 
     /**
      * Check if the current status can transition to the target status
+     * 
+     * @param string $targetStatus The target status to transition to
+     * @return bool Whether the transition is valid
      */
     public function canTransitionTo(string $targetStatus): bool
     {
+        // If current status is null or empty, assume it's a new record
+        if (empty($this->processing_status)) {
+            return $targetStatus === 'draft';
+        }
+        
         $validTransitions = [
             'draft' => ['verified', 'rejected'],
             'verified' => ['calculated', 'rejected'],
@@ -75,8 +83,69 @@ class Payroll extends Model
             'completed' => [], // End state
             'rejected' => ['draft'] // Can be restarted
         ];
-
-        return in_array($targetStatus, $validTransitions[$this->processing_status] ?? []);
+        
+        // Check if current status exists in valid transitions
+        if (!array_key_exists($this->processing_status, $validTransitions)) {
+            return false;
+        }
+        
+        return in_array($targetStatus, $validTransitions[$this->processing_status]);
+    }
+    
+    /**
+     * Validate if the status change is consistent with business rules
+     * 
+     * @param string $targetStatus The target status to transition to
+     * @param int|null $userId The ID of the user making the change
+     * @return array [bool $isValid, string $errorMessage]
+     */
+    public function validateStatusConsistency(string $targetStatus, ?int $userId = null): array
+    {
+        // Check if the transition is valid based on workflow rules
+        if (!$this->canTransitionTo($targetStatus)) {
+            return [false, "Status tidak dapat diubah dari '{$this->processing_status}' ke '{$targetStatus}'"];
+        }
+        
+        // Specific validation rules for each status transition
+        switch ($targetStatus) {
+            case 'verified':
+                if (!$userId) {
+                    return [false, 'Verifikasi membutuhkan ID pengguna yang valid'];
+                }
+                break;
+                
+            case 'approved':
+                if (!$userId) {
+                    return [false, 'Persetujuan membutuhkan ID pengguna yang valid'];
+                }
+                
+                // Ensure it has been verified first
+                if (empty($this->verified_by) || empty($this->verified_at)) {
+                    return [false, 'Penggajian harus diverifikasi terlebih dahulu sebelum disetujui'];
+                }
+                
+                // Verifier and approver should be different people
+                if ($userId == $this->verified_by) {
+                    return [false, 'Verifikator dan pemberi persetujuan harus orang yang berbeda'];
+                }
+                break;
+                
+            case 'processed':
+                // Ensure it has been approved
+                if (empty($this->approved_by) || empty($this->approved_at)) {
+                    return [false, 'Penggajian harus disetujui terlebih dahulu sebelum diproses'];
+                }
+                break;
+                
+            case 'completed':
+                // Ensure payment details are provided
+                if (empty($this->payment_method) || empty($this->payment_reference)) {
+                    return [false, 'Detail pembayaran harus dilengkapi sebelum menyelesaikan proses'];
+                }
+                break;
+        }
+        
+        return [true, ''];
     }
 
     /**

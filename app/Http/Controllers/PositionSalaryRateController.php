@@ -107,13 +107,13 @@ class PositionSalaryRateController extends Controller
         $validator = Validator::make($request->all(), [
             'position' => 'required|string|max:255|unique:position_salary_rates,position,' . $positionRate->id,
             'monthly_rate' => 'required|numeric|min:0',
-            'working_days' => 'required|integer|min:1|max:31',
+            'working_days' => 'nullable|integer|min:1|max:31',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
 
         if ($validator->fails()) {
-            return redirect()->route('position-rates.edit', $positionRate->id)
+            return redirect()->route('settings.position-rates.edit', $positionRate->id)
                 ->withErrors($validator)
                 ->withInput();
         }
@@ -138,7 +138,7 @@ class PositionSalaryRateController extends Controller
             'is_active' => $request->has('is_active'),
         ]);
 
-        return redirect()->route('position-rates.index')
+        return redirect()->route('settings.position-rates.index')
             ->with('success', 'Tarif gaji jabatan berhasil diperbarui.');
     }
 
