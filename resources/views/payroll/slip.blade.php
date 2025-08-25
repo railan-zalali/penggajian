@@ -153,23 +153,41 @@
         }
 
         .signature-area {
-            margin-top: 30px;
+            margin-top: 50px;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 40px;
+            padding: 0 20px;
         }
 
         .signature-box {
             text-align: center;
+            position: relative;
         }
 
         .signature-line {
-            border-top: 1px solid #dee2e6;
-            margin-top: 50px;
-            margin-bottom: 10px;
-            width: 80%;
-            margin-left: auto;
-            margin-right: auto;
+            border-top: 2px solid #333;
+            margin-top: 60px;
+            margin-bottom: 15px;
+            width: 100%;
+        }
+
+        .signature-name {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .signature-title {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .signature-date {
+            font-size: 11px;
+            color: #888;
+            margin-top: 8px;
         }
 
         .qr-code {
@@ -283,7 +301,7 @@
                             <tr>
                                 <td>{{ $deduction['name'] }}</td>
                                 <td class="amount">Rp
-                                    {{ number_format(isset($deduction['amount']) ? $deduction['amount'] : ($deduction['value'] ?? 0), 0, ',', '.') }}
+                                    {{ number_format(isset($deduction['amount']) ? $deduction['amount'] : $deduction['value'] ?? 0, 0, ',', '.') }}
                                 </td>
                             </tr>
                         @endforeach
@@ -323,13 +341,15 @@
             <div class="signature-area">
                 <div class="signature-box">
                     <div class="signature-line"></div>
-                    <strong>Perangkat Desa</strong><br>
-                    {{ $payrollData['nama'] }}
+                    <strong class="signature-name">Perangkat Desa</strong><br>
+                    <span class="signature-title">Nama</span><br>
+                    <span class="signature-date">{{ $payrollData['nama'] }}</span>
                 </div>
                 <div class="signature-box">
                     <div class="signature-line"></div>
-                    <strong>Pejabat Berwenang</strong><br>
-                    Kepala Desa
+                    <strong class="signature-name">Pejabat Berwenang</strong><br>
+                    <span class="signature-title">Jabatan</span><br>
+                    <span class="signature-date">Kepala Desa</span>
                 </div>
             </div>
         </div>

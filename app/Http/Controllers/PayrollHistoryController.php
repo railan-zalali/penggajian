@@ -97,39 +97,4 @@ class PayrollHistoryController extends Controller
 
         return $pdf->download("laporan_gaji_{$monthName}_{$year}.pdf");
     }
-    
-    public function completeAll(Request $request)
-    {
-        $validated = $request->validate([
-            'payment_method' => 'required|string|max:255',
-            'payment_reference' => 'nullable|string|max:255',
-            'notes' => 'nullable|string',
-        ]);
-        
-        // Ambil semua penggajian dengan status pending
-        $pendingPayrolls = Payroll::where('payment_status', 'pending')
-            ->where('processing_status', 'completed') // Pastikan hanya yang sudah selesai diproses
-            ->get();
-            
-        if ($pendingPayrolls->isEmpty()) {
-            return redirect()->route('payroll.history.index')
-                ->with('warning', 'Tidak ada penggajian dengan status pending yang dapat diselesaikan.');
-        }
-        
-        // Update semua penggajian pending menjadi paid
-        $count = 0;
-        foreach ($pendingPayrolls as $payroll) {
-            $payroll->update([
-                'payment_status' => 'paid',
-                'payment_date' => now(),
-                'payment_method' => $validated['payment_method'],
-                'payment_reference' => $validated['payment_reference'],
-                'notes' => $validated['notes'],
-            ]);
-            $count++;
-        }
-        
-        return redirect()->route('payroll.history.index')
-            ->with('success', "Berhasil menyelesaikan pembayaran untuk {$count} penggajian.");
-    }
 }

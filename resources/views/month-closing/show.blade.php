@@ -14,8 +14,13 @@
         </div>
 
         <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-            <div class="px-6 py-4 bg-indigo-600 text-white">
+            <div class="px-6 py-4 bg-indigo-600 text-white flex justify-between items-center">
                 <h2 class="text-xl font-semibold">Informasi Tutup Bulan: {{ $monthClosing->formatted_period }}</h2>
+                @if ($monthClosing->status == 'closed')
+                    <span class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">Periode Ditutup</span>
+                @else
+                    <span class="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm">Periode Dibuka Kembali</span>
+                @endif
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -115,7 +120,8 @@
                             Rp {{ number_format($summary['pending'] ?? 0, 0, ',', '.') }}
                         </p>
                         <p class="text-sm text-yellow-600 mt-2">
-                            {{ round((($summary['pending'] ?? 0) / $monthClosing->total_amount) * 100, 1) }}% dari total
+                            {{ round((($summary['pending'] ?? 0) / $monthClosing->total_amount) * 100, 1) }}% dari
+                            total
                         </p>
                     </div>
 
@@ -161,10 +167,16 @@
                                 Hari Kerja</th>
                             <th scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Jam Lembur</th>
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Gaji Pokok</th>
                             <th scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Lembur</th>
+                                Tunjangan</th>
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Potongan</th>
                             <th scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Total Gaji</th>
@@ -178,6 +190,10 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @forelse ($payrolls as $payroll)
+                            @php
+                                $totalAllowances = $payroll->details->where('type', 'allowance')->sum('amount');
+                                $totalDeductions = $payroll->details->where('type', 'deduction')->sum('amount');
+                            @endphp
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">{{ $payroll->linmas->nik ?? 'N/A' }}</div>
@@ -187,19 +203,26 @@
                                         {{ $payroll->linmas->nama ?? 'N/A' }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">{{ $payroll->total_days_present }}</div>
+                                    <div class="text-sm text-gray-900">{{ $payroll->total_days_present ?? 0 }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ $payroll->overtime_hours ?? 0 }} jam</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">Rp
-                                        {{ number_format($payroll->base_salary, 0, ',', '.') }}</div>
+                                        {{ number_format($payroll->base_salary ?? 0, 0, ',', '.') }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">Rp
-                                        {{ number_format($payroll->overtime_payment, 0, ',', '.') }}</div>
+                                        {{ number_format($totalAllowances, 0, ',', '.') }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">Rp
+                                        {{ number_format($totalDeductions, 0, ',', '.') }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-medium text-gray-900">Rp
-                                        {{ number_format($payroll->total_salary, 0, ',', '.') }}</div>
+                                        {{ number_format($payroll->total_salary ?? 0, 0, ',', '.') }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     @if ($payroll->payment_status == 'paid')
@@ -244,7 +267,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                                <td colspan="10" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">
                                     Tidak ada data penggajian
                                 </td>
                             </tr>

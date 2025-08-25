@@ -29,46 +29,62 @@
         .header {
             background-color: #343a40;
             color: white;
-            padding: 20px;
+            padding: 15px;
             text-align: center;
         }
 
         .header h1 {
             margin: 0;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
         }
 
         .header p {
-            margin: 5px 0 0;
-            font-size: 12px;
-            opacity: 0.8;
+            margin: 3px 0 0;
+            font-size: 11px;
+            opacity: 0.9;
         }
 
         .content {
-            padding: 20px;
+            padding: 15px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
+            table-layout: fixed;
+            font-size: 9px;
         }
 
         th {
             background-color: #f2f2f2;
             color: #333;
             font-weight: bold;
-            text-align: left;
-            padding: 8px;
+            text-align: center;
+            padding: 8px 4px;
             border: 1px solid #ddd;
-            font-size: 10px;
+            font-size: 9px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         td {
-            padding: 8px;
+            padding: 6px 4px;
             border: 1px solid #ddd;
             font-size: 9px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        td.numeric {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+        }
+
+        td.centered {
+            text-align: center;
         }
 
         tr:nth-child(even) {
@@ -77,9 +93,9 @@
 
         .status {
             display: inline-block;
-            padding: 3px 6px;
+            padding: 2px 4px;
             border-radius: 3px;
-            font-size: 8px;
+            font-size: 7px;
             font-weight: bold;
             text-transform: uppercase;
         }
@@ -100,33 +116,33 @@
         }
 
         .summary {
-            margin-top: 30px;
+            margin-top: 25px;
             border: 1px solid #ddd;
-            padding: 15px;
+            padding: 12px;
             background-color: #f8f9fa;
             border-radius: 5px;
         }
 
         .summary h2 {
             margin-top: 0;
-            font-size: 14px;
+            font-size: 12px;
             color: #343a40;
             border-bottom: 2px solid #343a40;
-            padding-bottom: 5px;
-            margin-bottom: 15px;
+            padding-bottom: 4px;
+            margin-bottom: 12px;
         }
 
         .summary-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 12px;
         }
 
         .summary-item {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 11px;
+            margin-bottom: 6px;
+            font-size: 9px;
         }
 
         .summary-label {
@@ -139,44 +155,44 @@
         }
 
         .summary-total {
-            margin-top: 15px;
-            padding-top: 10px;
+            margin-top: 12px;
+            padding-top: 8px;
             border-top: 1px solid #ddd;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 10px;
         }
 
         .footer {
-            margin-top: 40px;
+            margin-top: 30px;
             text-align: center;
-            font-size: 9px;
+            font-size: 8px;
             color: #6c757d;
             border-top: 1px solid #ddd;
-            padding-top: 10px;
+            padding-top: 8px;
         }
 
         .signature-area {
-            margin-top: 50px;
+            margin-top: 40px;
             display: flex;
             justify-content: space-between;
         }
 
         .signature-box {
-            width: 200px;
+            width: 180px;
             text-align: center;
         }
 
         .signature-line {
             border-top: 1px solid #ddd;
-            margin-top: 50px;
-            margin-bottom: 10px;
+            margin-top: 40px;
+            margin-bottom: 8px;
         }
 
         .page-number {
             position: absolute;
-            bottom: 20px;
-            right: 20px;
-            font-size: 9px;
+            bottom: 15px;
+            right: 15px;
+            font-size: 8px;
             color: #6c757d;
         }
 
@@ -185,7 +201,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 80px;
+            font-size: 60px;
             color: rgba(0, 0, 0, 0.03);
             z-index: -1;
         }
@@ -205,31 +221,37 @@
             <table>
                 <thead>
                     <tr>
-                        <th width="5%">No.</th>
-                        <th width="15%">NIK</th>
-                        <th width="20%">Nama</th>
-                        <th width="10%">Hari Kerja</th>
-                        <th width="10%">Lembur</th>
-                        <th width="15%">Gaji Pokok</th>
-                        <th width="10%">Lembur</th>
-                        <th width="15%">Total Gaji</th>
-                        <th width="10%">Status</th>
+                        <th width="4%">No.</th>
+                        <th width="12%">NIK</th>
+                        <th width="18%">Nama</th>
+                        <th width="8%">Hari Kerja</th>
+                        <th width="8%">Jam Lembur</th>
+                        <th width="12%">Gaji Pokok</th>
+                        <th width="12%">Tunjangan</th>
+                        <th width="12%">Potongan</th>
+                        <th width="14%">Total Gaji</th>
+                        <th width="8%">Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     @php $totalSalaryAll = 0; @endphp
                     @forelse($payrolls as $index => $payroll)
-                        @php $totalSalaryAll += $payroll->total_salary; @endphp
+                        @php
+                            $totalSalaryAll += $payroll->total_salary;
+                            $totalAllowances = $payroll->details->where('type', 'allowance')->sum('amount');
+                            $totalDeductions = $payroll->details->where('type', 'deduction')->sum('amount');
+                        @endphp
                         <tr>
-                            <td>{{ $index + 1 }}</td>
+                            <td class="centered">{{ $index + 1 }}</td>
                             <td>{{ $payroll->linmas->nik ?? 'N/A' }}</td>
                             <td>{{ $payroll->linmas->nama ?? 'N/A' }}</td>
-                            <td>{{ $payroll->total_days_present }}</td>
-                            <td>{{ $payroll->details->where('type', 'overtime')->first() ? number_format($payroll->details->where('type', 'overtime')->first()->amount / 10000) : number_format($payroll->overtime_payment / 10000) }} jam</td>
-                            <td>Rp {{ number_format($payroll->base_salary, 0, ',', '.') }}</td>
-                            <td>Rp {{ number_format($payroll->overtime_payment, 0, ',', '.') }}</td>
-                            <td>Rp {{ number_format($payroll->total_salary, 0, ',', '.') }}</td>
-                            <td>
+                            <td class="centered">{{ $payroll->total_days_present ?? 0 }}</td>
+                            <td class="centered">{{ $payroll->overtime_hours ?? 0 }} jam</td>
+                            <td class="numeric">Rp {{ number_format($payroll->base_salary ?? 0, 0, ',', '.') }}</td>
+                            <td class="numeric">Rp {{ number_format($totalAllowances, 0, ',', '.') }}</td>
+                            <td class="numeric">Rp {{ number_format($totalDeductions, 0, ',', '.') }}</td>
+                            <td class="numeric">Rp {{ number_format($payroll->total_salary ?? 0, 0, ',', '.') }}</td>
+                            <td class="centered">
                                 @if ($payroll->payment_status == 'paid')
                                     <span class="status status-paid">Dibayar</span>
                                 @elseif($payroll->payment_status == 'pending')
@@ -241,7 +263,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" style="text-align: center;">Tidak ada data penggajian untuk periode ini
+                            <td colspan="10" style="text-align: center;">Tidak ada data penggajian untuk periode ini
                             </td>
                         </tr>
                     @endforelse
@@ -258,15 +280,24 @@
                         </div>
                         <div class="summary-item">
                             <span class="summary-label">Total Hari Kerja:</span>
-                            <span class="summary-value">{{ $payrolls->sum('total_days_present') }} hari</span>
+                            <span class="summary-value">{{ $payrolls->sum('total_days_present') ?? 0 }} hari</span>
                         </div>
                         <div class="summary-item">
                             <span class="summary-label">Total Jam Lembur:</span>
-                            <span class="summary-value">{{ number_format($payrolls->sum('overtime_payment') / 10000) }}
-                                jam</span>
+                            <span class="summary-value">{{ $payrolls->sum('overtime_hours') ?? 0 }} jam</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Total Tunjangan:</span>
+                            <span class="summary-value">Rp
+                                {{ number_format($payrolls->sum(function ($p) {return $p->details->where('type', 'allowance')->sum('amount');}),0,',','.') }}</span>
                         </div>
                     </div>
                     <div>
+                        <div class="summary-item">
+                            <span class="summary-label">Total Potongan:</span>
+                            <span class="summary-value">Rp
+                                {{ number_format($payrolls->sum(function ($p) {return $p->details->where('type', 'deduction')->sum('amount');}),0,',','.') }}</span>
+                        </div>
                         <div class="summary-item">
                             <span class="summary-label">Total Gaji Dibayarkan:</span>
                             <span class="summary-value">Rp {{ number_format($totalPaid, 0, ',', '.') }}</span>

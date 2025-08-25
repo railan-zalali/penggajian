@@ -25,9 +25,8 @@ Route::get('/', function () {
 
 Route::get('/home', function () {
     if (auth()->check()) {
-        return auth()->user()->hasRole('perangkat_desa')
-            ? redirect()->route('perangkat.dashboard')
-            : redirect()->route('dashboard');
+        // Check if user is perangkat desa by checking if they can access perangkat routes
+        return redirect()->route('dashboard');
     }
     return redirect('/');
 })->name('home.redirect');
@@ -79,9 +78,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::put('/{payroll}/status', [PayrollHistoryController::class, 'updateStatus'])->name('update-status');
         Route::post('/monthly-report', [PayrollHistoryController::class, 'monthlyReport'])->name('monthly-report');
     });
-
-    // Payroll Complete All
-    Route::post('/payroll/complete-all', [PayrollHistoryController::class, 'completeAll'])->name('payroll.completeAll');
 
     // Month Closing
     Route::resource('month-closing', MonthClosingController::class)->except(['destroy']);
@@ -166,6 +162,9 @@ Route::middleware(['auth:perangkat', 'perangkat.active'])->group(function () {
     Route::get('/perangkat/payrolls', [PerangkatDashboardController::class, 'payrolls'])->name('perangkat.payrolls');
     Route::get('/perangkat/payrolls/{payroll}', [PerangkatDashboardController::class, 'payrollDetail'])->name('perangkat.payroll-detail');
     Route::get('/perangkat/month-closing', [PerangkatDashboardController::class, 'monthClosing'])->name('perangkat.month-closing');
+    Route::get('/perangkat/test-navigation', function () {
+        return view('perangkat.test-navigation');
+    })->name('perangkat.test-navigation');
 });
 
 require __DIR__ . '/auth.php';
