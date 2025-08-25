@@ -91,21 +91,6 @@
                             </div>
                         </a>
 
-                        <a href="{{ route('perangkat.month-closing') }}"
-                            class="bg-gradient-to-r from-purple-400 to-purple-600 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                            <div class="flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                <div>
-                                    <h3 class="font-bold text-lg">Tutup Bulan</h3>
-                                    <p class="text-sm opacity-90">Lihat riwayat tutup bulan</p>
-                                </div>
-                            </div>
-                        </a>
-
                         <a href="{{ route('perangkat.profile') }}"
                             class="bg-gradient-to-r from-orange-400 to-orange-600 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
                             <div class="flex items-center">
