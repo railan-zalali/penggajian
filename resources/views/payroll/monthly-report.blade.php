@@ -175,24 +175,22 @@
             margin-top: 40px;
             display: flex;
             justify-content: space-between;
+            width: 100%;
+            align-items: flex-start; /* Pastikan semua elemen sejajar dari atas */
         }
 
         .signature-box {
-            width: 180px;
-        }
-        
-        .signature-box:first-child {
-            text-align: left;
-        }
-        
-        .signature-box:last-child {
-            text-align: right;
+            width: 45%;
+            position: relative;
+            display: inline-block;
+            vertical-align: top; /* Pastikan sejajar dari atas */
+            text-align: center;
         }
 
         .signature-line {
             border-top: 1px solid #ddd;
-            margin-top: 40px;
-            margin-bottom: 8px;
+            margin: 40px auto 8px auto;
+            width: 80%;
         }
 
         .page-number {

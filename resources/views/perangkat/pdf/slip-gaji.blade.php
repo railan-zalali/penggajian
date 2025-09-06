@@ -1,223 +1,363 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Slip Gaji - {{ $perangkat->nama }}</title>
+    <title>Slip Gaji - {{ $payrollData['nama'] }}</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        @page {
             margin: 0;
-            padding: 20px;
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
             color: #333;
             font-size: 12px;
+            line-height: 1.5;
         }
-        .slip-container {
+
+        .container {
             max-width: 800px;
             margin: 0 auto;
-            border: 1px solid #ddd;
+            padding: 0;
+            background-color: #fff;
         }
-        .slip-header {
-            text-align: center;
+
+        .header {
+            background-color: #343a40;
+            color: white;
             padding: 20px;
-            border-bottom: 2px solid #333;
+            text-align: center;
         }
-        .slip-header h1 {
+
+        .header h1 {
             margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .header p {
+            margin: 5px 0 0;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .logo {
+            max-height: 80px;
+        }
+
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 100px;
+            color: rgba(0, 0, 0, 0.05);
+            z-index: -1;
+        }
+
+        .employee-info {
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .employee-info h2 {
+            margin: 0 0 15px;
+            color: #495057;
             font-size: 18px;
+            border-bottom: 2px solid #343a40;
+            padding-bottom: 5px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .info-item {
+            margin-bottom: 10px;
+        }
+
+        .info-label {
+            font-weight: 700;
+            color: #6c757d;
+            display: block;
+            margin-bottom: 3px;
+            font-size: 11px;
             text-transform: uppercase;
         }
-        .slip-header h2 {
-            margin: 5px 0 0;
-            font-size: 16px;
+
+        .info-value {
+            font-size: 14px;
         }
-        .slip-header p {
-            margin: 5px 0 0;
-            font-size: 12px;
-        }
-        .slip-body {
+
+        .salary-details {
             padding: 20px;
         }
-        .employee-info {
-            margin-bottom: 20px;
+
+        .salary-details h2 {
+            margin: 0 0 15px;
+            color: #495057;
+            font-size: 18px;
+            border-bottom: 2px solid #343a40;
+            padding-bottom: 5px;
         }
-        .info-row {
-            display: flex;
-            margin-bottom: 5px;
-        }
-        .info-label {
-            width: 150px;
-            font-weight: bold;
-        }
-        .info-value {
-            flex: 1;
-        }
-        .slip-table {
+
+        .salary-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
         }
-        .slip-table th, .slip-table td {
-            padding: 8px;
+
+        .salary-table th {
+            background-color: #e9ecef;
+            padding: 10px;
             text-align: left;
+            font-weight: 700;
+            border-bottom: 2px solid #dee2e6;
         }
-        .slip-table th {
-            background-color: #f2f2f2;
+
+        .salary-table td {
+            padding: 10px;
+            border-bottom: 1px solid #dee2e6;
         }
-        .total-row {
-            font-weight: bold;
-            background-color: #f9f9f9;
-        }
-        .slip-footer {
-            display: flex;
-            justify-content: space-between;
-            padding: 20px;
-            border-top: 1px solid #ddd;
-        }
-        .signature-box {
-            width: 45%;
-        }
-        .signature-box:first-child {
-            text-align: left;
-        }
-        .signature-box:last-child {
+
+        .salary-table .amount {
             text-align: right;
         }
-        .signature-line {
-            margin-top: 60px;
-            border-top: 1px solid #333;
-            padding-top: 5px;
+
+        .total-row td {
+            font-weight: 700;
+            border-top: 2px solid #343a40;
+            border-bottom: none;
+            background-color: #f8f9fa;
         }
-        @media print {
-            body {
-                padding: 0;
-            }
-            .slip-container {
-                border: none;
-            }
+
+        .footer {
+            padding: 20px;
+            text-align: center;
+            font-size: 10px;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+            background-color: #f8f9fa;
+        }
+
+        /* ✅ REVISI tanda tangan agar sejajar dalam satu baris */
+        .signature-area {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between; /* Bagi rata kanan-kiri */
+            padding: 0 20px;
+            align-items: flex-start; /* Pastikan semua elemen sejajar dari atas */
+        }
+
+        .signature-box {
+            width: 45%; /* Lebar yang proporsional */
+            text-align: center;
+            display: inline-block;
+            vertical-align: top; /* Pastikan sejajar dari atas */
+        }
+
+        .signature-line {
+            border-top: 2px solid #333;
+            margin: 60px auto 15px auto;
+            width: 80%;
+        }
+
+        .signature-name {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .signature-title {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .signature-date {
+            font-size: 11px;
+            color: #888;
+            margin-top: 8px;
+        }
+
+        .qr-code {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .qr-code img {
+            width: 80px;
+            height: 80px;
         }
     </style>
 </head>
+
 <body>
-    <div class="slip-container">
-        <div class="slip-header">
-            <h1>Slip Gaji Perangkat Desa</h1>
-            <h2>Desa {{ config('app.village_name', 'Desa') }}</h2>
-            <p>Periode: {{ $penggajian->payroll_date->format('F Y') }}</p>
+    <div class="watermark">SLIP GAJI</div>
+
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <!-- Replace with your logo -->
+                <h1>KECAMATAN KIARACONDONG</h1>
+            </div>
+            <h1>SLIP GAJI PERANGKAT DESA</h1>
+            <p>Periode: {{ \Carbon\Carbon::parse($startDate)->format('d F Y') }} - {{ \Carbon\Carbon::parse($endDate)->format('d F Y') }}</p>
         </div>
-        
-        <div class="slip-body">
-            <!-- Informasi Perangkat -->
-            <div class="employee-info">
-                <div class="info-row">
-                    <div class="info-label">Nama:</div>
-                    <div class="info-value">{{ $perangkat->nama }}</div>
+
+        <div class="employee-info">
+            <h2>Informasi Perangkat Desa</h2>
+            <div class="info-grid">
+                <div>
+                    <div class="info-item">
+                        <span class="info-label">Nama</span>
+                        <span class="info-value">{{ $payrollData['nama'] }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">NIK</span>
+                        <span class="info-value">{{ $payrollData['nik'] }}</span>
+                    </div>
                 </div>
-                <div class="info-row">
-                    <div class="info-label">NIK:</div>
-                    <div class="info-value">{{ $perangkat->nik }}</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">Jabatan:</div>
-                    <div class="info-value">{{ $perangkat->jabatan->nama ?? 'Tidak ada jabatan' }}</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">Tanggal Slip:</div>
-                    <div class="info-value">{{ now()->format('d F Y') }}</div>
+                <div>
+                    <div class="info-item">
+                        <span class="info-label">Tanggal Gaji</span>
+                        <span class="info-value">{{ \Carbon\Carbon::now()->format('d F Y') }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Metode Pembayaran</span>
+                        <span class="info-value">Transfer Bank</span>
+                    </div>
                 </div>
             </div>
-            
-            <!-- Informasi Kehadiran -->
-            <h3>Informasi Kehadiran</h3>
-            <table class="slip-table">
-                <tr>
-                    <th>Hari Kerja</th>
-                    <th>Kehadiran</th>
-                    <th>Persentase</th>
-                </tr>
-                <tr>
-                    <td>{{ $penggajian->working_days ?? 0 }} hari</td>
-                    <td>{{ $penggajian->attendance_days ?? 0 }} hari</td>
-                    <td>{{ $penggajian->working_days > 0 ? round(($penggajian->attendance_days / $penggajian->working_days) * 100, 1) : 0 }}%</td>
-                </tr>
-            </table>
-            
-            <!-- Rincian Pendapatan -->
-            <h3>Rincian Pendapatan</h3>
-            <table class="slip-table">
-                <tr>
-                    <th>Komponen</th>
-                    <th>Jumlah</th>
-                </tr>
-                <tr>
-                    <td>Gaji Pokok</td>
-                    <td>Rp {{ number_format($penggajian->base_salary ?? 0, 0, ',', '.') }}</td>
-                </tr>
-                
-                @if($tunjangan && count($tunjangan) > 0)
-                    @foreach($tunjangan as $item)
-                        <tr>
-                            <td>{{ $item->component_name }}</td>
-                            <td>Rp {{ number_format($item->amount, 0, ',', '.') }}</td>
-                        </tr>
-                    @endforeach
-                @endif
-                
-                <tr class="total-row">
-                    <td>Total Pendapatan</td>
-                    <td>Rp {{ number_format(($penggajian->base_salary ?? 0) + ($total_tunjangan ?? 0), 0, ',', '.') }}</td>
-                </tr>
-            </table>
-            
-            <!-- Rincian Potongan -->
-            <h3>Rincian Potongan</h3>
-            <table class="slip-table">
-                <tr>
-                    <th>Komponen</th>
-                    <th>Jumlah</th>
-                </tr>
-                
-                @if($potongan && count($potongan) > 0)
-                    @foreach($potongan as $item)
-                        <tr>
-                            <td>{{ $item->component_name }}</td>
-                            <td>Rp {{ number_format($item->amount, 0, ',', '.') }}</td>
-                        </tr>
-                    @endforeach
-                @else
+        </div>
+
+        <div class="salary-details">
+            <h2>Rincian Gaji</h2>
+            <table class="salary-table">
+                <thead>
                     <tr>
-                        <td colspan="2" style="text-align: center;">Tidak ada potongan</td>
+                        <th width="60%">Pendapatan</th>
+                        <th width="40%" class="amount">Jumlah</th>
                     </tr>
-                @endif
-                
-                <tr class="total-row">
-                    <td>Total Potongan</td>
-                    <td>Rp {{ number_format($total_potongan ?? 0, 0, ',', '.') }}</td>
-                </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Gaji Pokok Bulanan</td>
+                        <td class="amount">Rp {{ number_format($payrollData['base_salary'], 0, ',', '.') }}</td>
+                    </tr>
+
+                    @if (isset($payrollData['absence_deduction']) && $payrollData['absence_deduction'] > 0)
+                        <tr>
+                            <td>Potongan Ketidakhadiran
+                                @if (isset($payrollData['expected_working_days']) && isset($payrollData['actual_days_worked']))
+                                    ({{ $payrollData['expected_working_days'] - $payrollData['actual_days_worked'] }} hari)
+                                @endif
+                            </td>
+                            <td class="amount text-red-600">
+                                - Rp {{ number_format($payrollData['absence_deduction'], 0, ',', '.') }}
+                            </td>
+                        </tr>
+                    @endif
+
+                    @foreach ($payrollData['allowances'] as $allowance)
+                        <tr>
+                            <td>{{ $allowance['name'] }}</td>
+                            <td class="amount">Rp {{ number_format($allowance['amount'], 0, ',', '.') }}</td>
+                        </tr>
+                    @endforeach
+
+                    <tr class="total-row">
+                        <td>Total Pendapatan Kotor</td>
+                        <td class="amount">Rp
+                            {{ number_format($payrollData['base_salary'] + $payrollData['total_allowances'], 0, ',', '.') }}
+                        </td>
+                    </tr>
+                </tbody>
             </table>
-            
-            <!-- Total Gaji Bersih -->
-            <h3>Total Gaji Bersih</h3>
-            <table class="slip-table">
-                <tr class="total-row">
-                    <td>Total Gaji Bersih</td>
-                    <td>Rp {{ number_format($penggajian->total_salary ?? 0, 0, ',', '.') }}</td>
-                </tr>
+
+            <table class="salary-table">
+                <thead>
+                    <tr>
+                        <th width="60%">Potongan</th>
+                        <th width="40%" class="amount">Jumlah</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (isset($payrollData['deductions']) && count($payrollData['deductions']) > 0)
+                        @foreach ($payrollData['deductions'] as $deduction)
+                            <tr>
+                                <td>{{ $deduction['name'] }}</td>
+                                <td class="amount">Rp
+                                    {{ number_format(isset($deduction['amount']) ? $deduction['amount'] : $deduction['value'] ?? 0, 0, ',', '.') }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    @else
+                        <tr>
+                            <td>Pajak Penghasilan (PPh 21)</td>
+                            <td class="amount">Rp 0</td>
+                        </tr>
+                        <tr>
+                            <td>BPJS Kesehatan</td>
+                            <td class="amount">Rp 0</td>
+                        </tr>
+                        <tr>
+                            <td>BPJS Ketenagakerjaan</td>
+                            <td class="amount">Rp 0</td>
+                        </tr>
+                    @endif
+
+                    <tr class="total-row">
+                        <td>Total Potongan</td>
+                        <td class="amount">Rp {{ number_format($payrollData['total_deductions'] ?? 0, 0, ',', '.') }}</td>
+                    </tr>
+                </tbody>
             </table>
+
+            <table class="salary-table">
+                <tbody>
+                    <tr class="total-row">
+                        <td width="60%">Total Gaji Bersih</td>
+                        <td width="40%" class="amount">Rp
+                            {{ number_format($payrollData['total_wage'], 0, ',', '.') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="signature-area">
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <strong class="signature-name">Perangkat Desa</strong><br>
+                    <span class="signature-title">Nama</span><br>
+                    <span class="signature-date">{{ $payrollData['nama'] }}</span>
+                </div>
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <strong class="signature-name">Pejabat Berwenang</strong><br>
+                    <span class="signature-title">Jabatan</span><br>
+                    <span class="signature-date">Kepala Desa</span>
+                </div>
+            </div>
         </div>
-        
-        <div class="slip-footer">
-            <div class="signature-box">
-                <p>Diterima oleh,</p>
-                <div class="signature-line">{{ $perangkat->nama }}</div>
-            </div>
-            
-            <div class="signature-box">
-                <p>{{ config('app.village_name', 'Desa') }}, {{ now()->format('d F Y') }}</p>
-                <p>Kepala Desa</p>
-                <div class="signature-line">{{ config('app.village_head', 'Kepala Desa') }}</div>
-            </div>
+
+        <div class="footer">
+            <p>Slip gaji ini diterbitkan secara elektronik dan sah tanpa tanda tangan.</p>
+            <p>Dokumen ini bersifat rahasia dan hanya untuk kepentingan karyawan yang bersangkutan.</p>
+            <p>© {{ date('Y') }} Sistem Penggajian Perangkat Desa Kecamatan Kiaracondong</p>
         </div>
     </div>
 </body>
+
 </html>

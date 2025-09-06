@@ -74,20 +74,22 @@
             justify-content: space-between;
             padding: 20px;
             border-top: 1px solid #ddd;
+            width: 100%;
+            align-items: flex-start; /* Pastikan semua elemen sejajar dari atas */
         }
         .signature-box {
             width: 45%;
-        }
-        .signature-box:first-child {
-            text-align: left;
-        }
-        .signature-box:last-child {
-            text-align: right;
+            display: inline-block;
+            vertical-align: top; /* Pastikan sejajar dari atas */
+            text-align: center;
         }
         .signature-line {
             margin-top: 60px;
             border-top: 1px solid #333;
             padding-top: 5px;
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
         }
         .print-button {
             text-align: center;

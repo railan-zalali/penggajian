@@ -1,14 +1,14 @@
-/* Slip Signature Styling */
+/* Signature Print Styling */
 .signature-area {
-    margin-top: 50px;
+    margin-top: 40px;
     display: flex;
     justify-content: space-between;
-    padding: 0 20px;
+    width: 100%;
     align-items: flex-start; /* Pastikan semua elemen sejajar dari atas */
 }
 
 .signature-box {
-    width: 45%; /* Lebar yang proporsional */
+    width: 45%;
     position: relative;
     display: inline-block;
     vertical-align: top; /* Pastikan sejajar dari atas */
@@ -16,46 +16,36 @@
 }
 
 .signature-line {
-    border-top: 2px solid #333;
-    margin: 60px auto 15px auto;
+    border-top: 1px solid #333;
+    margin: 60px auto 10px auto;
     width: 80%;
 }
 
 .signature-name {
-    font-weight: 700;
+    font-weight: bold;
     font-size: 14px;
     margin-bottom: 5px;
-    color: #333;
 }
 
 .signature-title {
     font-size: 12px;
     color: #666;
     font-style: italic;
-    margin-bottom: 3px;
 }
 
 .signature-date {
     font-size: 11px;
     color: #888;
-    margin-top: 8px;
+    margin-top: 5px;
 }
 
 /* Responsive adjustments */
 @media print {
     .signature-area {
-        margin-top: 40px;
-        gap: 30px;
+        margin-top: 30px;
     }
-
+    
     .signature-line {
         margin-top: 50px;
-    }
-}
-
-@media (max-width: 768px) {
-    .signature-area {
-        grid-template-columns: 1fr;
-        gap: 30px;
     }
 }

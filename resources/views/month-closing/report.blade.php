@@ -154,10 +154,12 @@
             margin-top: 40px;
             display: flex;
             justify-content: space-between;
+            width: 100%;
         }
 
         .signature-box {
             width: 45%;
+            position: relative;
         }
         
         .signature-box:first-child {

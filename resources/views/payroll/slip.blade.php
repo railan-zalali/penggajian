@@ -154,22 +154,25 @@
 
         .signature-area {
             margin-top: 50px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
             padding: 0 20px;
+            align-items: flex-start; /* Pastikan semua elemen sejajar dari atas */
         }
 
         .signature-box {
-            text-align: center;
+            width: 45%;
             position: relative;
+            display: inline-block;
+            vertical-align: top; /* Pastikan sejajar dari atas */
+            text-align: center;
         }
 
         .signature-line {
             border-top: 2px solid #333;
-            margin-top: 60px;
-            margin-bottom: 15px;
-            width: 100%;
+            margin: 60px auto 15px auto;
+            width: 80%;
         }
 
         .signature-name {
