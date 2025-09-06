@@ -314,5 +314,23 @@
         </tbody>
     </table>
     @endif
+
+    <div style="margin-top: 40px; display: flex; justify-content: space-between;">
+        <div style="width: 45%; text-align: left;">
+            <div style="border-top: 1px solid #ddd; margin-top: 50px; margin-bottom: 10px; width: 80%;"></div>
+            <strong>Dibuat oleh,</strong><br>
+            Admin Penggajian
+        </div>
+        <div style="width: 45%; text-align: right;">
+            <div style="border-top: 1px solid #ddd; margin-top: 50px; margin-bottom: 10px; width: 80%; margin-left: auto;"></div>
+            <strong>Disetujui oleh,</strong><br>
+            Kepala Desa
+        </div>
+    </div>
+
+    <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666;">
+        <p>Laporan ini dibuat secara otomatis dari Sistem Penggajian Perangkat Desa.</p>
+        <p>Dicetak pada: {{ \Carbon\Carbon::now()->format('d F Y H:i:s') }}</p>
+    </div>
 </body>
 </html>

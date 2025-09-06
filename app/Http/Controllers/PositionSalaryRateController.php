@@ -43,6 +43,7 @@ class PositionSalaryRateController extends Controller
         $validator = Validator::make($request->all(), [
             'position' => 'required|string|max:255|unique:position_salary_rates',
             'monthly_rate' => 'required|numeric|min:0',
+            'working_days' => 'required|integer|min:1|max:31',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
@@ -55,7 +56,7 @@ class PositionSalaryRateController extends Controller
 
         // Calculate daily rate
         $monthlyRate = $request->monthly_rate;
-        $workingDays = 22; // Menggunakan nilai default 22 hari kerja
+        $workingDays = $request->working_days;
         $dailyRate = PositionSalaryRate::calculateDailyRate($monthlyRate, $workingDays);
 
         PositionSalaryRate::create([
@@ -94,6 +95,7 @@ class PositionSalaryRateController extends Controller
         $validator = Validator::make($request->all(), [
             'position' => 'required|string|max:255|unique:position_salary_rates,position,' . $positionRate->id,
             'monthly_rate' => 'required|numeric|min:0',
+            'working_days' => 'required|integer|min:1|max:31',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
@@ -106,7 +108,7 @@ class PositionSalaryRateController extends Controller
 
         // Calculate daily rate
         $monthlyRate = $request->monthly_rate;
-        $workingDays = 22; // Menggunakan nilai default 22 hari kerja
+        $workingDays = $request->working_days;
         $dailyRate = PositionSalaryRate::calculateDailyRate($monthlyRate, $workingDays);
 
         $positionRate->update([

@@ -339,13 +339,13 @@
             </table>
 
             <div class="signature-area">
-                <div class="signature-box">
+                <div class="signature-box" style="text-align: left;">
                     <div class="signature-line"></div>
                     <strong class="signature-name">Perangkat Desa</strong><br>
                     <span class="signature-title">Nama</span><br>
                     <span class="signature-date">{{ $payrollData['nama'] }}</span>
                 </div>
-                <div class="signature-box">
+                <div class="signature-box" style="text-align: right;">
                     <div class="signature-line"></div>
                     <strong class="signature-name">Pejabat Berwenang</strong><br>
                     <span class="signature-title">Jabatan</span><br>

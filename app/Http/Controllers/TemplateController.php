@@ -143,4 +143,58 @@ class TemplateController extends Controller
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ])->deleteFileAfterSend(true);
     }
+    
+    public function downloadPerangkatTemplate()
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Set headers sesuai dengan format file import yang diinginkan
+        $headers = ['nik', 'nama', 'tempat_lahir', 'tanggal_lahir', 'alamat', 'pendidikan', 'pekerjaan', 'posisi', 'tanggal_bergabung', 'status'];
+        $column = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($column . '1', $header);
+            $sheet->getStyle($column . '1')->getFont()->setBold(true);
+            $column++;
+        }
+
+        // Set example data
+        $sheet->setCellValue('A2', '3205350412700002');
+        $sheet->setCellValue('B2', 'John Doe');
+        $sheet->setCellValue('C2', 'Jakarta');
+        $sheet->setCellValue('D2', '1985-01-01'); // Format: YYYY-MM-DD
+        $sheet->setCellValue('E2', 'Jl. Contoh No. 123');
+        $sheet->setCellValue('F2', 'S1');
+        $sheet->setCellValue('G2', 'Wiraswasta');
+        $sheet->setCellValue('H2', 'Kepala Desa');
+        $sheet->setCellValue('I2', '2020-01-01'); // Format: YYYY-MM-DD
+        $sheet->setCellValue('J2', 'active');
+
+        // Auto size columns
+        foreach (range('A', 'J') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Tambahkan instruksi penggunaan template
+        $sheet->insertNewRowBefore(1, 2);
+        $sheet->mergeCells('A1:J1');
+        $sheet->setCellValue('A1', 'PETUNJUK PENGGUNAAN TEMPLATE PERANGKAT DESA:\n1. Format tanggal harus YYYY-MM-DD (contoh: 1985-01-01)\n2. Pendidikan: SD, SMP, SMA, D1, D2, D3, D4, S1, S2, S3\n3. Posisi harus sesuai dengan data yang terdaftar di sistem\n4. Status: active atau inactive');
+        $sheet->getStyle('A1')->getFont()->setBold(true);
+        $sheet->getStyle('A1')->getFont()->setSize(11);
+        $sheet->getStyle('A1')->getAlignment()->setWrapText(true);
+        $sheet->getRowDimension(1)->setRowHeight(60); // Tinggi baris untuk petunjuk
+        $sheet->getStyle('A1')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID);
+        $sheet->getStyle('A1')->getFill()->getStartColor()->setARGB('FFFFFF00'); // Yellow background
+
+        // Save to temporary file
+        $writer = new Xlsx($spreadsheet);
+        $filename = 'template_perangkat_desa.xlsx';
+        $temp_file = tempnam(sys_get_temp_dir(), $filename);
+        $writer->save($temp_file);
+
+        // Return response
+        return response()->download($temp_file, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
 }

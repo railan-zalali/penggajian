@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Slip Gaji - {{ $payroll->linmas->nama }}</title>
+    <title>Slip Gaji - {{ $perangkat->nama }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -58,7 +58,6 @@
             margin-bottom: 20px;
         }
         .slip-table th, .slip-table td {
-            border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
         }
@@ -89,26 +88,7 @@
             border-top: 1px solid #333;
             padding-top: 5px;
         }
-        .print-button {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .print-button button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .print-button button:hover {
-            background-color: #45a049;
-        }
         @media print {
-            .print-button {
-                display: none;
-            }
             body {
                 padding: 0;
             }
@@ -123,7 +103,7 @@
         <div class="slip-header">
             <h1>Slip Gaji Perangkat Desa</h1>
             <h2>Desa {{ config('app.village_name', 'Desa') }}</h2>
-            <p>Periode: {{ $payroll->payroll_date->format('F Y') }}</p>
+            <p>Periode: {{ $penggajian->payroll_date->format('F Y') }}</p>
         </div>
         
         <div class="slip-body">
@@ -131,15 +111,15 @@
             <div class="employee-info">
                 <div class="info-row">
                     <div class="info-label">Nama:</div>
-                    <div class="info-value">{{ $payroll->linmas->nama }}</div>
+                    <div class="info-value">{{ $perangkat->nama }}</div>
                 </div>
                 <div class="info-row">
                     <div class="info-label">NIK:</div>
-                    <div class="info-value">{{ $payroll->linmas->nik }}</div>
+                    <div class="info-value">{{ $perangkat->nik }}</div>
                 </div>
                 <div class="info-row">
                     <div class="info-label">Jabatan:</div>
-                    <div class="info-value">{{ $payroll->linmas->jabatan->nama }}</div>
+                    <div class="info-value">{{ $perangkat->jabatan->nama ?? 'Tidak ada jabatan' }}</div>
                 </div>
                 <div class="info-row">
                     <div class="info-label">Tanggal Slip:</div>
@@ -156,9 +136,9 @@
                     <th>Persentase</th>
                 </tr>
                 <tr>
-                    <td>{{ $payroll->working_days }} hari</td>
-                    <td>{{ $payroll->attendance_days }} hari</td>
-                    <td>{{ $payroll->working_days > 0 ? round(($payroll->attendance_days / $payroll->working_days) * 100, 1) : 0 }}%</td>
+                    <td>{{ $penggajian->working_days ?? 0 }} hari</td>
+                    <td>{{ $penggajian->attendance_days ?? 0 }} hari</td>
+                    <td>{{ $penggajian->working_days > 0 ? round(($penggajian->attendance_days / $penggajian->working_days) * 100, 1) : 0 }}%</td>
                 </tr>
             </table>
             
@@ -171,21 +151,21 @@
                 </tr>
                 <tr>
                     <td>Gaji Pokok</td>
-                    <td>Rp {{ number_format($payroll->base_salary, 0, ',', '.') }}</td>
+                    <td>Rp {{ number_format($penggajian->base_salary ?? 0, 0, ',', '.') }}</td>
                 </tr>
                 
-                @if($details && $details->where('component_type', 'allowance')->count() > 0)
-                    @foreach($details->where('component_type', 'allowance') as $allowance)
+                @if($tunjangan && count($tunjangan) > 0)
+                    @foreach($tunjangan as $item)
                         <tr>
-                            <td>{{ $allowance->component_name }}</td>
-                            <td>Rp {{ number_format($allowance->amount, 0, ',', '.') }}</td>
+                            <td>{{ $item->component_name }}</td>
+                            <td>Rp {{ number_format($item->amount, 0, ',', '.') }}</td>
                         </tr>
                     @endforeach
                 @endif
                 
                 <tr class="total-row">
                     <td>Total Pendapatan</td>
-                    <td>Rp {{ number_format($payroll->base_salary + ($details ? $details->where('component_type', 'allowance')->sum('amount') : 0), 0, ',', '.') }}</td>
+                    <td>Rp {{ number_format(($penggajian->base_salary ?? 0) + ($total_tunjangan ?? 0), 0, ',', '.') }}</td>
                 </tr>
             </table>
             
@@ -197,11 +177,11 @@
                     <th>Jumlah</th>
                 </tr>
                 
-                @if($details && $details->where('component_type', 'deduction')->count() > 0)
-                    @foreach($details->where('component_type', 'deduction') as $deduction)
+                @if($potongan && count($potongan) > 0)
+                    @foreach($potongan as $item)
                         <tr>
-                            <td>{{ $deduction->component_name }}</td>
-                            <td>Rp {{ number_format($deduction->amount, 0, ',', '.') }}</td>
+                            <td>{{ $item->component_name }}</td>
+                            <td>Rp {{ number_format($item->amount, 0, ',', '.') }}</td>
                         </tr>
                     @endforeach
                 @else
@@ -212,7 +192,7 @@
                 
                 <tr class="total-row">
                     <td>Total Potongan</td>
-                    <td>Rp {{ number_format($details ? $details->where('component_type', 'deduction')->sum('amount') : 0, 0, ',', '.') }}</td>
+                    <td>Rp {{ number_format($total_potongan ?? 0, 0, ',', '.') }}</td>
                 </tr>
             </table>
             
@@ -221,7 +201,7 @@
             <table class="slip-table">
                 <tr class="total-row">
                     <td>Total Gaji Bersih</td>
-                    <td>Rp {{ number_format($payroll->total_salary, 0, ',', '.') }}</td>
+                    <td>Rp {{ number_format($penggajian->total_salary ?? 0, 0, ',', '.') }}</td>
                 </tr>
             </table>
         </div>
@@ -229,7 +209,7 @@
         <div class="slip-footer">
             <div class="signature-box">
                 <p>Diterima oleh,</p>
-                <div class="signature-line">{{ $payroll->linmas->nama }}</div>
+                <div class="signature-line">{{ $perangkat->nama }}</div>
             </div>
             
             <div class="signature-box">
@@ -238,10 +218,6 @@
                 <div class="signature-line">{{ config('app.village_head', 'Kepala Desa') }}</div>
             </div>
         </div>
-    </div>
-    
-    <div class="print-button">
-        <button onclick="window.print()">Cetak Slip Gaji</button>
     </div>
 </body>
 </html>

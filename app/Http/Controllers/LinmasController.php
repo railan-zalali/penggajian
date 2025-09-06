@@ -82,10 +82,12 @@ class LinmasController extends Controller
             // Update data
             $linmas->update($validatedData);
             
-            // Log perubahan data
+            // Log perubahan data yang lebih detail
+            $changes = array_diff_assoc($linmas->toArray(), $oldData);
             Log::info('Linmas updated successfully', [
                 'id' => $linmas->id,
                 'nik' => $linmas->nik,
+                'changes' => $changes,
                 'old_data' => $oldData,
                 'new_data' => $linmas->toArray()
             ]);
@@ -94,6 +96,7 @@ class LinmasController extends Controller
                 ->with('success', 'Data Perangkat Desa berhasil diupdate!');
         } catch (\Exception $e) {
             Log::error('Linmas update failed: ' . $e->getMessage(), [
+                'linmas_id' => $linmas->id,
                 'nik' => $request->nik,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()

@@ -158,7 +158,14 @@
 
         .signature-box {
             width: 45%;
-            text-align: center;
+        }
+        
+        .signature-box:first-child {
+            text-align: left;
+        }
+        
+        .signature-box:last-child {
+            text-align: right;
         }
 
         .signature-line {

@@ -7,6 +7,7 @@ use App\Http\Controllers\LinmasLoginController;
 use App\Http\Controllers\PayRateController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollHistoryController;
+use App\Http\Controllers\PerangkatController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\SalaryRateController;
@@ -50,11 +51,22 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // Templates
     Route::get('/templates/linmas', [TemplateController::class, 'downloadLinmasTemplate'])->name('templates.linmas');
     Route::get('/templates/attendance', [TemplateController::class, 'downloadAttendanceTemplate'])->name('templates.attendance');
+    Route::get('/templates/perangkat', [TemplateController::class, 'downloadPerangkatTemplate'])->name('templates.perangkat');
 
     // Linmas
-    Route::resource('linmas', LinmasController::class)->except(['show']);
+     Route::get('linmas', [LinmasController::class, 'index'])->name('linmas.index');
+    Route::get('linmas/create', [LinmasController::class, 'create'])->name('linmas.create');
+    Route::post('linmas', [LinmasController::class, 'store'])->name('linmas.store');
+    Route::get('linmas/{linmas}/edit', [LinmasController::class, 'edit'])->name('linmas.edit');
+    Route::put('linmas/{linmas}', [LinmasController::class, 'update'])->name('linmas.update');
+    Route::delete('linmas/{linmas}', [LinmasController::class, 'destroy'])->name('linmas.destroy');
     Route::get('linmas/{linmas}', [LinmasController::class, 'show'])->name('linmas.show');
+    // Route::resource('linmas', LinmasController::class);
     Route::post('/linmas/import', [LinmasController::class, 'import'])->name('linmas.import');
+    
+    // Perangkat Desa
+    Route::resource('perangkat', PerangkatController::class);
+    Route::post('/perangkat/import', [PerangkatController::class, 'import'])->name('perangkat.import');
 
     // Attendances
     Route::get('/attendances', [AttendancesController::class, 'index'])->name('attendances.index');

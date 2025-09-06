@@ -8,8 +8,15 @@
 }
 
 .signature-box {
-    text-align: center;
     position: relative;
+}
+
+.signature-box:first-child {
+    text-align: left;
+}
+
+.signature-box:last-child {
+    text-align: right;
 }
 
 .signature-line {
