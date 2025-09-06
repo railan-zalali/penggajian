@@ -44,14 +44,16 @@ class AttendancesController extends Controller
                         $attendance->nik = $row[1];
                         $attendance->nama = $row[2];
                         
-                        // Validasi format tanggal dan waktu
+                        // Validasi format tanggal dan jam (sekarang terpisah)
                         try {
-                            $attendance->waktu = \Carbon\Carbon::createFromFormat('d/m/Y H:i:s', $row[3])->format('Y-m-d H:i:s');
+                            $tanggal = $row[3];
+                            $jam = $row[4];
+                            $attendance->waktu = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $tanggal . ' ' . $jam)->format('Y-m-d H:i:s');
                         } catch (\Exception $e) {
-                            throw new \Exception('Format tanggal dan waktu tidak valid pada baris ' . ($index + 1) . '. Format yang benar: DD/MM/YYYY HH:MM:SS');
+                            throw new \Exception('Format tanggal atau jam tidak valid pada baris ' . ($index + 1) . '. Format yang benar: tanggal (YYYY-MM-DD) dan jam (HH:MM)');
                         }
                         
-                        $attendance->status = $row[4];
+                        $attendance->status = $row[5];
                         
                         // Cari Linmas berdasarkan NIK
                         $linmas = \App\Models\Linmas::where('nik', $row[1])->first();
@@ -79,11 +81,14 @@ class AttendancesController extends Controller
                 // Format data: [0]=No, [1]=NIK, [2]=Nama, [3]=Waktu, [4]=Status
                 if (isset($row[3]) && !empty($row[3])) {
                     try {
-                        // Validasi format tanggal dan waktu
+                        // Validasi format tanggal dan waktu (sekarang terpisah)
                         try {
-                            $date = \Carbon\Carbon::createFromFormat('d/m/Y H:i:s', $row[3]);
+                            // Kolom tanggal (indeks 3) dan jam (indeks 4)
+                            $tanggal = $row[3];
+                            $jam = $row[4];
+                            $date = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $tanggal . ' ' . $jam);
                         } catch (\Exception $e) {
-                            throw new \Exception('Format tanggal dan waktu tidak valid pada baris ' . ($index + 1) . '. Format yang benar: DD/MM/YYYY HH:MM:SS');
+                            throw new \Exception('Format tanggal atau jam tidak valid pada baris ' . ($index + 1) . '. Format yang benar: tanggal (YYYY-MM-DD) dan jam (HH:MM)');
                         }
                         
                         $year = $date->year;
@@ -108,14 +113,14 @@ class AttendancesController extends Controller
                             throw new \Exception('Nama tidak boleh kosong pada baris ' . ($index + 1));
                         }
                         
-                        // Validasi Status
-                        if (empty($row[4])) {
+                        // Validasi Status (sekarang di indeks 5 karena kolom tanggal dan jam terpisah)
+                        if (empty($row[5])) {
                             throw new \Exception('Status tidak boleh kosong pada baris ' . ($index + 1));
                         }
                         
                         // Validasi status harus salah satu dari: Masuk, Keluar, Hadir, Lembur, Lembur Masuk, Lembur Keluar, C/Masuk, C/Keluar
                         $validStatus = ['Masuk', 'Keluar', 'Hadir', 'Lembur', 'Lembur Masuk', 'Lembur Keluar', 'C/Masuk', 'C/Keluar'];
-                        if (!in_array(trim($row[4]), $validStatus)) {
+                        if (!in_array(trim($row[5]), $validStatus)) {
                             throw new \Exception('Status tidak valid pada baris ' . ($index + 1) . '. Status harus salah satu dari: ' . implode(', ', $validStatus));
                         }
                     } catch (\Exception $e) {

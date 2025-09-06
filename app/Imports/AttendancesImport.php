@@ -45,7 +45,7 @@ class AttendancesImport implements ToModel, WithHeadingRow, WithValidation, Skip
     {
         try {
             // Skip baris header atau kosong
-            if (!isset($row['nama']) || !isset($row['waktu']) || !isset($row['status'])) {
+            if (!isset($row['nama']) || !isset($row['tanggal']) || !isset($row['jam']) || !isset($row['status'])) {
                 return null;
             }
             
@@ -79,17 +79,16 @@ class AttendancesImport implements ToModel, WithHeadingRow, WithValidation, Skip
                 }
             }
             
+            // Gabungkan tanggal dan jam menjadi satu string datetime
+            $tanggalJam = $row['tanggal'] . ' ' . $row['jam'];
+            
             // Format tanggal yang didukung
             $formats = [
-                'd-m-Y H:i',     // Format utama: 01-01-2023 08:00
-                'Y-m-d H:i:s',   // Format ISO
-                'Y/m/d H:i:s',
-                'd/m/Y H:i:s',
-                'm/d/Y H:i:s',
-                'Y-m-d H:i',
+                'Y-m-d H:i',     // Format utama: 2023-01-01 08:00
+                'Y-m-d H:i:s',   // Format dengan detik
+                'd-m-Y H:i',     // Format alternatif
                 'Y/m/d H:i',
-                'd/m/Y H:i',
-                'm/d/Y H:i'
+                'd/m/Y H:i'
             ];
             $waktu = null;
 
@@ -97,7 +96,7 @@ class AttendancesImport implements ToModel, WithHeadingRow, WithValidation, Skip
             try {
                 foreach ($formats as $format) {
                     try {
-                        $parsed = Carbon::createFromFormat($format, $row['waktu']);
+                        $parsed = Carbon::createFromFormat($format, $tanggalJam);
                         $waktu = $parsed;
                         break;
                     } catch (\Exception $e) {
@@ -106,10 +105,10 @@ class AttendancesImport implements ToModel, WithHeadingRow, WithValidation, Skip
                 }
                 
                 if (!$waktu) {
-                    throw new \Exception("Format tanggal tidak valid");
+                    throw new \Exception("Format tanggal dan jam tidak valid");
                 }
             } catch (\Exception $e) {
-                $this->errors[] = "Format tanggal '{$row['waktu']}' tidak valid. Gunakan format 'DD-MM-YYYY HH:MM'";
+                $this->errors[] = "Format tanggal '{$row['tanggal']}' atau jam '{$row['jam']}' tidak valid. Gunakan format tanggal 'YYYY-MM-DD' dan jam 'HH:MM'";
                 return null;
             }
             
@@ -226,7 +225,8 @@ class AttendancesImport implements ToModel, WithHeadingRow, WithValidation, Skip
     {
         return [
             'nama' => 'required|string',
-            'waktu' => 'required',
+            'tanggal' => 'required',
+            'jam' => 'required',
             'status' => 'required|in:C/Masuk,C/Keluar,Lembur Masuk,Lembur Keluar',
             'nik' => 'nullable|string',
             // status_baru column removed as per requirements

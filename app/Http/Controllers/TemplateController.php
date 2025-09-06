@@ -64,8 +64,8 @@ class TemplateController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        // Set headers sesuai dengan format yang diinginkan
-        $headers = ['No.', 'NIK', 'Nama', 'Waktu', 'Status'];
+        // Set headers dengan kolom tanggal dan jam terpisah
+        $headers = ['No.', 'NIK', 'Nama', 'Tanggal', 'Jam', 'Status'];
         $column = 'A';
         foreach ($headers as $header) {
             $sheet->setCellValue($column . '1', $header);
@@ -73,52 +73,58 @@ class TemplateController extends Controller
             $column++;
         }
 
-        // Set example data
+        // Set example data dengan tanggal dan jam terpisah
         $sheet->setCellValue('A2', '1');
         $sheet->setCellValue('B2', '3205350412700002');
         $sheet->setCellValue('C2', 'THOMAS,S.IP');
-        $sheet->setCellValue('D2', '2025-08-01 07:30:00'); // Format YYYY-MM-DD HH:MM:SS
-        $sheet->setCellValue('E2', 'C/Masuk');
+        $sheet->setCellValue('D2', '2025-08-01'); // Format YYYY-MM-DD
+        $sheet->setCellValue('E2', '07:30'); // Format HH:MM
+        $sheet->setCellValue('F2', 'C/Masuk');
 
         $sheet->setCellValue('A3', '2');
         $sheet->setCellValue('B3', '3205350412700002');
         $sheet->setCellValue('C3', 'THOMAS,S.IP');
-        $sheet->setCellValue('D3', '2025-08-01 16:30:00');
-        $sheet->setCellValue('E3', 'C/Keluar');
+        $sheet->setCellValue('D3', '2025-08-01');
+        $sheet->setCellValue('E3', '16:30');
+        $sheet->setCellValue('F3', 'C/Keluar');
 
         $sheet->setCellValue('A4', '3');
         $sheet->setCellValue('B4', '3205350507730007');
         $sheet->setCellValue('C4', 'BEBEN SOPANDI');
-        $sheet->setCellValue('D4', '2025-08-01 07:30:00');
-        $sheet->setCellValue('E4', 'C/Masuk');
+        $sheet->setCellValue('D4', '2025-08-01');
+        $sheet->setCellValue('E4', '07:30');
+        $sheet->setCellValue('F4', 'C/Masuk');
 
         $sheet->setCellValue('A5', '4');
         $sheet->setCellValue('B5', '3205350507730007');
         $sheet->setCellValue('C5', 'BEBEN SOPANDI');
-        $sheet->setCellValue('D5', '2025-08-01 16:30:00');
-        $sheet->setCellValue('E5', 'C/Keluar');
+        $sheet->setCellValue('D5', '2025-08-01');
+        $sheet->setCellValue('E5', '16:30');
+        $sheet->setCellValue('F5', 'C/Keluar');
 
         $sheet->setCellValue('A6', '5');
         $sheet->setCellValue('B6', '3205353001910001');
         $sheet->setCellValue('C6', 'TATAN TASWARA');
-        $sheet->setCellValue('D6', '2025-08-01 07:30:00');
-        $sheet->setCellValue('E6', 'C/Masuk');
+        $sheet->setCellValue('D6', '2025-08-01');
+        $sheet->setCellValue('E6', '07:30');
+        $sheet->setCellValue('F6', 'C/Masuk');
 
         $sheet->setCellValue('A7', '6');
         $sheet->setCellValue('B7', '3205353001910001');
         $sheet->setCellValue('C7', 'TATAN TASWARA');
-        $sheet->setCellValue('D7', '2025-08-01 16:30:00');
-        $sheet->setCellValue('E7', 'C/Keluar');
+        $sheet->setCellValue('D7', '2025-08-01');
+        $sheet->setCellValue('E7', '16:30');
+        $sheet->setCellValue('F7', 'C/Keluar');
 
         // Auto size columns
-        foreach (range('A', 'E') as $col) {
+        foreach (range('A', 'F') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
         // Tambahkan instruksi penggunaan template
         $sheet->insertNewRowBefore(1, 2);
-        $sheet->mergeCells('A1:E1');
-        $sheet->setCellValue('A1', 'PETUNJUK PENGGUNAAN TEMPLATE KEHADIRAN:\n1. Format waktu harus YYYY-MM-DD HH:MM:SS (contoh: 2025-08-01 07:30:00)\n2. Status yang valid: C/Masuk, C/Keluar, Lembur Masuk, Lembur Keluar\n3. Pastikan NIK dan Nama sesuai dengan data yang terdaftar di sistem');
+        $sheet->mergeCells('A1:F1');
+        $sheet->setCellValue('A1', 'PETUNJUK PENGGUNAAN TEMPLATE KEHADIRAN:\n1. Format tanggal harus YYYY-MM-DD (contoh: 2025-08-01)\n2. Format jam harus HH:MM (contoh: 07:30)\n3. Status yang valid: C/Masuk, C/Keluar, Lembur Masuk, Lembur Keluar\n4. Pastikan NIK dan Nama sesuai dengan data yang terdaftar di sistem');
         $sheet->getStyle('A1')->getFont()->setBold(true);
         $sheet->getStyle('A1')->getFont()->setSize(11);
         $sheet->getStyle('A1')->getAlignment()->setWrapText(true);

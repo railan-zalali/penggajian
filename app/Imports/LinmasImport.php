@@ -27,6 +27,7 @@ class LinmasImport implements
     protected $errors = [];
     protected $rowCount = 0;
     protected $successCount = 0;
+    protected $duplicateCount = 0;
 
     public function prepareForValidation($row, $rowIndex)
     {
@@ -93,8 +94,11 @@ class LinmasImport implements
             return false;
         }
 
-        if (Linmas::where('nik', $nik)->exists()) {
-            $this->errors[] = "NIK '$nik' sudah terdaftar";
+        // Cek apakah NIK sudah ada di database
+        $existingLinmas = Linmas::where('nik', $nik)->first();
+        if ($existingLinmas) {
+            $this->duplicateCount++;
+            $this->errors[] = "NIK '$nik' sudah terdaftar dengan nama '{$existingLinmas->nama}'";
             return false;
         }
 
@@ -217,14 +221,19 @@ class LinmasImport implements
         return $this->errors;
     }
 
-    public function getRowCount(): int
+    public function getRowCount()
     {
         return $this->rowCount;
     }
 
-    public function getSuccessCount(): int
+    public function getSuccessCount()
     {
         return $this->successCount;
+    }
+    
+    public function getDuplicateCount()
+    {
+        return $this->duplicateCount;
     }
 
     public function batchSize(): int

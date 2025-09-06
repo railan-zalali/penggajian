@@ -28,13 +28,7 @@ class PositionSalaryRateController extends Controller
      */
     public function create()
     {
-        $startOfMonth = Carbon::now()->startOfMonth();
-        $endOfMonth = Carbon::now()->endOfMonth();
-        $workingDays = CarbonPeriod::create($startOfMonth, $endOfMonth)
-            ->filter(function ($date) {
-                return !$date->isWeekend();
-            })
-            ->count();
+        $workingDays = 22; // Menggunakan nilai default 22 hari kerja
         return view('position-rates.create', compact('workingDays'));
     }
 
@@ -49,7 +43,6 @@ class PositionSalaryRateController extends Controller
         $validator = Validator::make($request->all(), [
             'position' => 'required|string|max:255|unique:position_salary_rates',
             'monthly_rate' => 'required|numeric|min:0',
-            'working_days' => 'required|integer|min:1|max:31',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
@@ -62,13 +55,7 @@ class PositionSalaryRateController extends Controller
 
         // Calculate daily rate
         $monthlyRate = $request->monthly_rate;
-        $startOfMonth = Carbon::now()->startOfMonth();
-        $endOfMonth = Carbon::now()->endOfMonth();
-        $workingDays = CarbonPeriod::create($startOfMonth, $endOfMonth)
-            ->filter(function ($date) {
-                return !$date->isWeekend();
-            })
-            ->count();
+        $workingDays = 22; // Menggunakan nilai default 22 hari kerja
         $dailyRate = PositionSalaryRate::calculateDailyRate($monthlyRate, $workingDays);
 
         PositionSalaryRate::create([
@@ -107,7 +94,6 @@ class PositionSalaryRateController extends Controller
         $validator = Validator::make($request->all(), [
             'position' => 'required|string|max:255|unique:position_salary_rates,position,' . $positionRate->id,
             'monthly_rate' => 'required|numeric|min:0',
-            'working_days' => 'nullable|integer|min:1|max:31',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
@@ -120,13 +106,7 @@ class PositionSalaryRateController extends Controller
 
         // Calculate daily rate
         $monthlyRate = $request->monthly_rate;
-        $startOfMonth = Carbon::now()->startOfMonth();
-        $endOfMonth = Carbon::now()->endOfMonth();
-        $workingDays = CarbonPeriod::create($startOfMonth, $endOfMonth)
-            ->filter(function ($date) {
-                return !$date->isWeekend();
-            })
-            ->count();
+        $workingDays = 22; // Menggunakan nilai default 22 hari kerja
         $dailyRate = PositionSalaryRate::calculateDailyRate($monthlyRate, $workingDays);
 
         $positionRate->update([

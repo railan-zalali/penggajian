@@ -58,19 +58,50 @@ class LinmasController extends Controller
 
     public function edit(Linmas $linmas)
     {
-        return view('linmas.edit', compact('linmas'));
+        try {
+            return view('linmas.edit', compact('linmas'));
+        } catch (\Exception $e) {
+            Log::error('Error accessing linmas edit form: ' . $e->getMessage(), [
+                'linmas_id' => $linmas->id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('linmas.index')
+                ->with('error', 'Gagal mengakses form edit: ' . $e->getMessage());
+        }
     }
 
     public function update(Request $request, Linmas $linmas)
     {
-        $validatedData = $this->validateLinmas($request, $linmas->id);
-
         try {
+            // Validasi data
+            $validatedData = $this->validateLinmas($request, $linmas->id);
+            
+            // Simpan data lama untuk log
+            $oldData = $linmas->toArray();
+            
+            // Update data
             $linmas->update($validatedData);
-            return redirect()->route('linmas.index')->with('success', 'Data Perangkat Desa berhasil diupdate!');
+            
+            // Log perubahan data
+            Log::info('Linmas updated successfully', [
+                'id' => $linmas->id,
+                'nik' => $linmas->nik,
+                'old_data' => $oldData,
+                'new_data' => $linmas->toArray()
+            ]);
+            
+            return redirect()->route('linmas.index')
+                ->with('success', 'Data Perangkat Desa berhasil diupdate!');
         } catch (\Exception $e) {
-            Log::error('Linmas update failed: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Gagal mengupdate data Perangkat Desa: ' . $e->getMessage())->withInput();
+            Log::error('Linmas update failed: ' . $e->getMessage(), [
+                'nik' => $request->nik,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->back()
+                ->with('error', 'Gagal mengupdate data Perangkat Desa: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
@@ -78,8 +109,24 @@ class LinmasController extends Controller
     {
         try {
             // Periksa apakah linmas memiliki data kehadiran atau penggajian
-            if ($linmas->attendances()->count() > 0 || $linmas->payrolls()->count() > 0) {
-                return redirect()->route('linmas.index')->with('error', 'Tidak dapat menghapus data Perangkat Desa karena masih memiliki data kehadiran atau penggajian');
+            $attendanceCount = $linmas->attendances()->count();
+            $payrollCount = $linmas->payrolls()->count();
+            $userCount = $linmas->user()->count();
+            
+            $errorMessages = [];
+            if ($attendanceCount > 0) {
+                $errorMessages[] = "data kehadiran ({$attendanceCount} data)";
+            }
+            if ($payrollCount > 0) {
+                $errorMessages[] = "data penggajian ({$payrollCount} data)";
+            }
+            if ($userCount > 0) {
+                $errorMessages[] = "akun pengguna";
+            }
+            
+            if (!empty($errorMessages)) {
+                return redirect()->route('linmas.index')
+                    ->with('error', 'Tidak dapat menghapus data Perangkat Desa karena masih memiliki ' . implode(', ', $errorMessages));
             }
 
             $linmas->delete();
@@ -128,12 +175,29 @@ class LinmasController extends Controller
             $totalRows = $import->getRowCount();
             $errorCount = count($import->errors());
             $successCount = $import->getSuccessCount(); // Menggunakan metode baru yang lebih akurat
-            Log::info('Jumlah data berhasil: ' . $successCount . ', Jumlah error: ' . $errorCount . ', Total baris: ' . $totalRows);
+            $duplicateCount = $import->getDuplicateCount(); // Mendapatkan jumlah data duplikat
+            
+            Log::info('Jumlah data berhasil: ' . $successCount . 
+                     ', Jumlah error: ' . $errorCount . 
+                     ', Jumlah duplikat: ' . $duplicateCount . 
+                     ', Total baris: ' . $totalRows);
 
+            // Jika ada error, tampilkan pesan error
             if (count($import->errors()) > 0) {
                 DB::rollBack();
                 Log::warning('Import dibatalkan karena terdapat error: ' . json_encode($import->errors()));
-                return redirect()->back()->withErrors($import->errors())->with('error', 'Terdapat kesalahan pada file import');
+                
+                // Jika semua error adalah duplikasi, berikan pesan khusus
+                if ($errorCount == $duplicateCount && $duplicateCount > 0) {
+                    return redirect()->back()
+                        ->withErrors($import->errors())
+                        ->with('error', 'Semua data sudah ada dalam sistem. Tidak ada data baru yang diimport.');
+                }
+                
+                return redirect()->back()
+                    ->withErrors($import->errors())
+                    ->with('error', 'Terdapat kesalahan pada file import. ' . 
+                             ($duplicateCount > 0 ? "$duplicateCount data duplikat ditemukan." : ''));
             }
 
             if ($successCount == 0) {
@@ -145,7 +209,10 @@ class LinmasController extends Controller
                 if ($totalRows == 0) {
                     $errorMessage .= 'File mungkin kosong atau tidak memiliki data yang valid.';
                 } elseif ($errorCount > 0) {
-                    $errorMessage .= 'Semua data memiliki kesalahan. Periksa format data Anda, terutama tipe data untuk kolom thn, bln, dan kontak harus berupa teks.';
+                    if ($duplicateCount > 0) {
+                        $errorMessage .= "$duplicateCount data sudah ada dalam sistem. ";
+                    }
+                    $errorMessage .= 'Periksa format data Anda, terutama tipe data untuk kolom thn, bln, dan kontak harus berupa teks.';
                 } else {
                     $errorMessage .= 'Periksa format file dan struktur data Anda.';
                 }
@@ -154,8 +221,13 @@ class LinmasController extends Controller
             }
 
             DB::commit();
+            $message = 'Data Perangkat Desa berhasil diimport (' . $successCount . ' data)';
+            if ($duplicateCount > 0) {
+                $message .= '. ' . $duplicateCount . ' data duplikat dilewati.';
+            }
+            
             Log::info('Import berhasil diselesaikan dengan ' . $successCount . ' data');
-            return redirect()->route('linmas.index')->with('success', 'Data Perangkat Desa berhasil diimport (' . $successCount . ' data)');
+            return redirect()->route('linmas.index')->with('success', $message);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error saat import data linmas: ' . $e->getMessage());
