@@ -68,12 +68,12 @@
             <div class="overflow-x-auto bg-white rounded-lg shadow-md">
                 <table class="min-w-full bg-white" id="linmasTable">
                     <thead>
-                        <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                        <tr class="bg-gray-200 text-gray-600 uppercase text-xs leading-normal">
                             <th class="py-3 px-6 text-left">No</th>
                             <th class="py-3 px-6 text-left">Nama</th>
                             <th class="py-3 px-6 text-left">NIK</th>
-                            <th class="py-3 px-6 text-left">Tempat Lahir</th>
-                            <th class="py-3 px-6 text-left">Tanggal Lahir</th>
+                            <th class="py-3 px-6 text-left">Alamat</th>
+                            <th class="py-3 px-6 text-left">Tempat Tanggal Lahir</th>
                             <th class="py-3 px-6 text-left">Pendidikan</th>
                             <th class="py-3 px-6 text-left">Pekerjaan</th>
                             <th class="py-3 px-6 text-left">Posisi</th>
@@ -81,14 +81,14 @@
                             <th class="py-3 px-6 text-center">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="text-gray-600 text-sm font-light">
+                    <tbody class="text-gray-600 text-xs font-light">
                         @foreach ($linmas as $index => $item)
                             <tr class="border-b border-gray-200 hover:bg-gray-100 transition duration-300 ease-in-out">
                                 <td class="py-3 px-6 text-left whitespace-nowrap">{{ $index + 1 }}</td>
                                 <td class="py-3 px-6 text-left">{{ $item->nama }}</td>
                                 <td class="py-3 px-6 text-left">{{ $item->nik }}</td>
-                                <td class="py-3 px-6 text-left">{{ $item->tempat_lahir }}</td>
-                                <td class="py-3 px-6 text-left">{{ $item->tanggal_lahir ? date('d-m-Y', strtotime($item->tanggal_lahir)) : '' }}</td>
+                                <td class="py-3 px-6 text-left">{{ $item->alamat }}</td>
+                                <td class="py-3 px-6 text-left">{{ $item->tempat_lahir . ', ' . date('d-m-Y', strtotime($item->tanggal_lahir)) }}</td>
                                 <td class="py-3 px-6 text-left">{{ $item->pendidikan }}</td>
                                 <td class="py-3 px-6 text-left">{{ $item->pekerjaan }}</td>
                                 <td class="py-3 px-6 text-left">{{ $item->posisi }}</td>

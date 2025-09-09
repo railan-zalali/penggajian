@@ -7,11 +7,11 @@ use App\Http\Controllers\LinmasLoginController;
 use App\Http\Controllers\PayRateController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollHistoryController;
-use App\Http\Controllers\PerangkatController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\SalaryRateController;
 use App\Http\Controllers\AllowanceDeductionController;
+use App\Http\Controllers\Auth\PerangkatLoginController;
 use App\Http\Controllers\MonthClosingController;
 use App\Http\Controllers\PayrollWorkflowController;
 use App\Http\Controllers\PerangkatDashboardController;
@@ -26,8 +26,9 @@ Route::get('/', function () {
 
 Route::get('/home', function () {
     if (auth()->check()) {
-        // Check if user is perangkat desa by checking if they can access perangkat routes
-        return redirect()->route('dashboard');
+        return auth()->user()->hasRole('perangkat_desa')
+            ? redirect()->route('perangkat.dashboard')
+            : redirect()->route('dashboard');
     }
     return redirect('/');
 })->name('home.redirect');
@@ -51,10 +52,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // Templates
     Route::get('/templates/linmas', [TemplateController::class, 'downloadLinmasTemplate'])->name('templates.linmas');
     Route::get('/templates/attendance', [TemplateController::class, 'downloadAttendanceTemplate'])->name('templates.attendance');
-    Route::get('/templates/perangkat', [TemplateController::class, 'downloadPerangkatTemplate'])->name('templates.perangkat');
 
     // Linmas
-     Route::get('linmas', [LinmasController::class, 'index'])->name('linmas.index');
+
+    Route::get('linmas', [LinmasController::class, 'index'])->name('linmas.index');
     Route::get('linmas/create', [LinmasController::class, 'create'])->name('linmas.create');
     Route::post('linmas', [LinmasController::class, 'store'])->name('linmas.store');
     Route::get('linmas/{linmas}/edit', [LinmasController::class, 'edit'])->name('linmas.edit');
@@ -64,9 +65,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // Route::resource('linmas', LinmasController::class);
     Route::post('/linmas/import', [LinmasController::class, 'import'])->name('linmas.import');
     
-    // Perangkat Desa
-    Route::resource('perangkat', PerangkatController::class);
-    Route::post('/perangkat/import', [PerangkatController::class, 'import'])->name('perangkat.import');
+    // Route::resource('linmas', LinmasController::class)->except(['show']);
+    // Route::get('linmas/{linmas}', [LinmasController::class, 'show'])->name('linmas.show');
+    // Route::post('/linmas/import', [LinmasController::class, 'import'])->name('linmas.import');
 
     // Attendances
     Route::get('/attendances', [AttendancesController::class, 'index'])->name('attendances.index');
@@ -74,7 +75,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/attendances/{id}', [AttendancesController::class, 'destroy'])->name('attendances.destroy');
 
     // Payroll
-    Route::prefix('payroll')->name('payroll.')->group(function () {
+     Route::prefix('payroll')->name('payroll.')->group(function () {
         Route::get('/', [PayrollController::class, 'index'])->name('index');
         Route::post('/calculate', [PayrollController::class, 'calculatePayroll'])->name('calculate');
         Route::post('/export-pdf', [PayrollController::class, 'exportPdf'])->name('exportPdf');
@@ -157,26 +158,23 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
 // Rute Login Perangkat Desa
 Route::middleware('guest:perangkat')->group(function () {
-    Route::get('/perangkat/login', [App\Http\Controllers\Auth\PerangkatLoginController::class, 'showLoginForm'])->name('perangkat.login');
-    Route::post('/perangkat/login', [App\Http\Controllers\Auth\PerangkatLoginController::class, 'login']);
+    Route::get('/perangkat/login', [PerangkatLoginController::class, 'showLoginForm'])->name('perangkat.login');
+    Route::post('/perangkat/login', [PerangkatLoginController::class, 'login']);
 });
 
 // Rute Logout Perangkat Desa
-Route::post('/perangkat/logout', [App\Http\Controllers\Auth\PerangkatLoginController::class, 'logout'])
+Route::post('/perangkat/logout', [PerangkatLoginController::class, 'logout'])
     ->middleware('auth:perangkat')
     ->name('perangkat.logout');
 
 // Rute khusus Perangkat Desa
-Route::middleware(['auth:perangkat', 'perangkat.active'])->group(function () {
+Route::middleware('auth:perangkat')->group(function () {
     Route::get('/perangkat/dashboard', [PerangkatDashboardController::class, 'index'])->name('perangkat.dashboard');
     Route::get('/perangkat/profile', [PerangkatDashboardController::class, 'profile'])->name('perangkat.profile');
     Route::get('/perangkat/attendances', [PerangkatDashboardController::class, 'attendances'])->name('perangkat.attendances');
     Route::get('/perangkat/payrolls', [PerangkatDashboardController::class, 'payrolls'])->name('perangkat.payrolls');
     Route::get('/perangkat/payrolls/{payroll}', [PerangkatDashboardController::class, 'payrollDetail'])->name('perangkat.payroll-detail');
     Route::get('/perangkat/month-closing', [PerangkatDashboardController::class, 'monthClosing'])->name('perangkat.month-closing');
-    Route::get('/perangkat/test-navigation', function () {
-        return view('perangkat.test-navigation');
-    })->name('perangkat.test-navigation');
 });
 
 require __DIR__ . '/auth.php';
