@@ -165,9 +165,7 @@ class PayrollController extends Controller
                     'nik' => $linmas->nik,
                     'nama' => $linmas->nama,
                     'total_days_worked' => $payroll->total_days_present,
-                    'total_overtime' => 0, // Akan diupdate dari detail jika ada
                     'base_salary' => $payroll->base_salary,
-                    'overtime_payment' => $payroll->overtime_payment,
                     'total_wage' => max(0, $payroll->total_salary), // Pastikan tidak negatif
                     'allowances' => [],
                     'deductions' => [],
@@ -247,9 +245,7 @@ class PayrollController extends Controller
                                 'nik' => $linmas->nik,
                                 'nama' => $linmas->nama,
                                 'total_days_worked' => $payroll->total_days_present,
-                                'total_overtime' => 0, // Ambil dari detail jika ada
                                 'base_salary' => $payroll->base_salary,
-                                'overtime_payment' => $payroll->overtime_payment,
                                 'total_wage' => max(0, $payroll->total_salary), // Pastikan tidak negatif
                                 'allowances' => [],
                                 'deductions' => [],
@@ -277,8 +273,6 @@ class PayrollController extends Controller
                                         'amount' => $amount
                                     ];
                                     $payrollData['total_deductions'] += $amount;
-                                } elseif ($detail->type == 'overtime') {
-                                    $payrollData['total_overtime'] += $detail->hours ?? 0;
                                 }
                             }
                         } else {

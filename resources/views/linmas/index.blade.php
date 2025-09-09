@@ -75,8 +75,6 @@
                             <th class="py-3 px-6 text-left">Alamat</th>
                             <th class="py-3 px-6 text-left">Tempat Tanggal Lahir</th>
                             <th class="py-3 px-6 text-left">Pendidikan</th>
-                            <th class="py-3 px-6 text-left">Pekerjaan</th>
-                            <th class="py-3 px-6 text-left">Posisi</th>
                             <th class="py-3 px-6 text-left">Status</th>
                             <th class="py-3 px-6 text-center">Aksi</th>
                         </tr>
@@ -90,8 +88,6 @@
                                 <td class="py-3 px-6 text-left">{{ $item->alamat }}</td>
                                 <td class="py-3 px-6 text-left">{{ $item->tempat_lahir . ', ' . date('d-m-Y', strtotime($item->tanggal_lahir)) }}</td>
                                 <td class="py-3 px-6 text-left">{{ $item->pendidikan }}</td>
-                                <td class="py-3 px-6 text-left">{{ $item->pekerjaan }}</td>
-                                <td class="py-3 px-6 text-left">{{ $item->posisi }}</td>
                                 <td class="py-3 px-6 text-left">{{ ucfirst($item->status ?? 'aktif') }}</td>
                                 <td class="py-3 px-6 text-center">
                                     <div class="flex item-center justify-center space-x-2">

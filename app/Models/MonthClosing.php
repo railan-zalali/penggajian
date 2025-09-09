@@ -19,6 +19,8 @@ class MonthClosing extends Model
         'total_payrolls',
         'total_amount',
         'closed_by',
+        'reopened_at',
+        'reopened_by',
         'notes',
         'status'
     ];
@@ -26,6 +28,7 @@ class MonthClosing extends Model
     protected $casts = [
         'period' => 'date',
         'closing_date' => 'date',
+        'reopened_at' => 'datetime',
     ];
 
     /**

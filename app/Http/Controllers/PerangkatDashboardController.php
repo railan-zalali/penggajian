@@ -7,6 +7,7 @@ use App\Models\Payroll;
 use App\Models\MonthClosing;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 
 class PerangkatDashboardController extends Controller
@@ -49,24 +50,61 @@ class PerangkatDashboardController extends Controller
         return view('perangkat.profile', compact('linmas', 'attendanceStats', 'payrollStats'));
     }
 
-    public function attendances()
+    public function attendances(Request $request)
     {
         $linmas = Auth::guard('perangkat')->user();
-        $attendances = Attendances::where('linmas_id', $linmas->id)
-            ->orderBy('waktu', 'desc')
-            ->paginate(15);
+        
+        $query = Attendances::where('linmas_id', $linmas->id);
+        
+        // Filter berdasarkan tanggal
+        if ($request->filled('start_date')) {
+            $query->whereDate('waktu', '>=', $request->start_date);
+        }
+        
+        if ($request->filled('end_date')) {
+            $query->whereDate('waktu', '<=', $request->end_date);
+        }
+        
+        // Filter berdasarkan status
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+        
+        $attendances = $query->orderBy('waktu', 'desc')->paginate(15);
+        
+        // Append query parameters to pagination links
+        $attendances->appends($request->query());
 
         $attendanceStats = $this->getAttendanceStats($linmas->id, true);
 
         return view('perangkat.attendances', compact('attendances', 'linmas', 'attendanceStats'));
     }
 
-    public function payrolls()
+    public function payrolls(Request $request)
     {
         $linmas = Auth::guard('perangkat')->user();
-        $payrolls = Payroll::where('linmas_id', $linmas->id)
-            ->orderBy('payroll_date', 'desc')
-            ->paginate(10);
+        
+        $query = Payroll::where('linmas_id', $linmas->id);
+        
+        // Filter berdasarkan tahun
+        if ($request->filled('year') && $request->year !== 'all') {
+            $query->whereYear('payroll_date', $request->year);
+        }
+        
+        // Filter berdasarkan bulan
+        if ($request->filled('month') && $request->month !== 'all') {
+            $query->whereMonth('payroll_date', $request->month);
+        }
+        
+        // Filter berdasarkan status pembayaran
+        if ($request->filled('payment_status') && $request->payment_status !== 'all') {
+            $query->where('payment_status', $request->payment_status);
+        }
+        
+        $payrolls = $query->orderBy('payroll_date', 'desc')->paginate(10);
+        
+        // Append query parameters to pagination links
+        $payrolls->appends($request->query());
 
         $payrollStats = $this->getPayrollStats($linmas->id);
 
@@ -191,5 +229,55 @@ class PerangkatDashboardController extends Controller
                 ->count(),
             'totalPeriods' => Payroll::where('linmas_id', $linmasId)->count(),
         ];
+    }
+
+    /**
+     * Update the authenticated perangkat's profile.
+     */
+    public function updateProfile(Request $request)
+    {
+        $linmas = Auth::guard('perangkat')->user();
+        
+        $request->validate([
+            'nama' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255|unique:linmas,email,' . $linmas->id,
+            'kontak' => 'nullable|string|max:20',
+            'tempat_lahir' => 'nullable|string|max:255',
+            'tanggal_lahir' => 'nullable|date',
+            'pendidikan' => 'nullable|string|max:255',
+            'alamat' => 'nullable|string|max:500',
+        ]);
+
+        $linmas->update([
+            'nama' => $request->nama,
+            'email' => $request->email,
+            'kontak' => $request->kontak,
+            'tempat_lahir' => $request->tempat_lahir,
+            'tanggal_lahir' => $request->tanggal_lahir,
+            'pendidikan' => $request->pendidikan,
+            'alamat' => $request->alamat,
+        ]);
+
+        return redirect()->route('perangkat.profile')
+            ->with('success', 'Profil berhasil diperbarui!');
+    }
+
+    /**
+     * Update the authenticated perangkat's password.
+     */
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required|current_password:perangkat',
+            'password' => 'required|confirmed|min:8',
+        ]);
+
+        $linmas = Auth::guard('perangkat')->user();
+        $linmas->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        return redirect()->route('perangkat.profile')
+            ->with('success', 'Password berhasil diubah!');
     }
 }

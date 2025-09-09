@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Linmas;
+use App\Models\PositionSalaryRate;
 use App\Imports\LinmasImport;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -40,7 +41,11 @@ class LinmasController extends Controller
 
     public function create()
     {
-        return view('linmas.create');
+        $positions = PositionSalaryRate::where('is_active', true)
+            ->orderBy('position')
+            ->pluck('position', 'position');
+        
+        return view('linmas.create', compact('positions'));
     }
 
     public function store(Request $request)
@@ -59,7 +64,11 @@ class LinmasController extends Controller
     public function edit(Linmas $linmas)
     {
         try {
-            return view('linmas.edit', compact('linmas'));
+            $positions = PositionSalaryRate::where('is_active', true)
+                ->orderBy('position')
+                ->pluck('position', 'position');
+            
+            return view('linmas.edit', compact('linmas', 'positions'));
         } catch (\Exception $e) {
             Log::error('Error accessing linmas edit form: ' . $e->getMessage(), [
                 'linmas_id' => $linmas->id,
@@ -149,8 +158,7 @@ class LinmasController extends Controller
             'tanggal_lahir' => 'required|date',
             'alamat' => 'required|string|max:255',
             'pendidikan' => 'required|string|max:255',
-            'pekerjaan' => 'required|string|max:255',
-            'posisi' => 'nullable|string|max:255',
+            'jabatan' => 'required|string|exists:position_salary_rates,position',
             'tanggal_bergabung' => 'nullable|date',
             'status' => 'nullable|string|in:aktif,tidak aktif',
             'gaji_pokok' => 'nullable|numeric',

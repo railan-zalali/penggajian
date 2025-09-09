@@ -25,7 +25,6 @@ class PayrollCalculationService
 
         $attendances = $attendances->groupBy('linmas_id');
         $generalRates = SalaryRate::where('is_active', true)->pluck('value', 'key');
-        $overtimeRate = $generalRates->get('overtime_rate', 10000);
 
         // Calculate expected working days in the period (Mon-Sat)
         $period = \Carbon\CarbonPeriod::create($startDate, $endDate);
@@ -39,7 +38,7 @@ class PayrollCalculationService
         // Pastikan expected working days tidak nol untuk menghindari division by zero
         $expectedWorkingDays = max(1, $expectedWorkingDays);
 
-        $payrollData = $allLinmas->map(function ($linmas) use ($attendances, $overtimeRate, $expectedWorkingDays, $startDate) {
+        $payrollData = $allLinmas->map(function ($linmas) use ($attendances, $expectedWorkingDays, $startDate) {
             $linmasId = $linmas->id;
             $linmasAttendances = $attendances->get($linmasId, collect());
 
@@ -81,15 +80,13 @@ class PayrollCalculationService
 
             $baseSalary = $monthlySalary - $absenceDeduction;
 
-            // Menghapus perhitungan lembur sesuai permintaan
-            $overtimeHours = 0;
-            $overtimePay = 0;
+            // Field lembur sudah dihapus dari sistem
 
             // --- Allowances and Deductions ---
             $allowances = LinmasAllowanceDeduction::getLinmasAllowances($linmasId);
             $totalAllowances = 0;
             $allowanceDetails = [];
-            $salaryForPercentage = max(0, $baseSalary + $overtimePay); // Pastikan tidak negatif
+            $salaryForPercentage = max(0, $baseSalary); // Pastikan tidak negatif
 
             foreach ($allowances as $allowance) {
                 if (!$allowance->type) continue;
@@ -152,7 +149,7 @@ class PayrollCalculationService
             }
 
             // Pastikan total gaji tidak negatif
-            $totalSalary = max(0, $baseSalary + $overtimePay + $totalAllowances - $totalDeductions);
+            $totalSalary = max(0, $baseSalary + $totalAllowances - $totalDeductions);
 
             return [
                 'nik' => $linmas->nik,
@@ -163,7 +160,7 @@ class PayrollCalculationService
                 'actual_days_worked' => $actualDaysWorked,
                 'absence_deduction' => $absenceDeduction,
                 'base_salary' => $baseSalary,
-                'overtime_payment' => $overtimePay,
+                // Field overtime_payment sudah dihapus
                 'allowances' => $allowanceDetails,
                 'total_allowances' => $totalAllowances,
                 'deductions' => $deductionDetails,

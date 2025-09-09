@@ -171,6 +171,8 @@ Route::post('/perangkat/logout', [PerangkatLoginController::class, 'logout'])
 Route::middleware('auth:perangkat')->group(function () {
     Route::get('/perangkat/dashboard', [PerangkatDashboardController::class, 'index'])->name('perangkat.dashboard');
     Route::get('/perangkat/profile', [PerangkatDashboardController::class, 'profile'])->name('perangkat.profile');
+    Route::put('/perangkat/profile', [PerangkatDashboardController::class, 'updateProfile'])->name('perangkat.profile.update');
+    Route::put('/perangkat/password', [PerangkatDashboardController::class, 'updatePassword'])->name('perangkat.password.update');
     Route::get('/perangkat/attendances', [PerangkatDashboardController::class, 'attendances'])->name('perangkat.attendances');
     Route::get('/perangkat/payrolls', [PerangkatDashboardController::class, 'payrolls'])->name('perangkat.payrolls');
     Route::get('/perangkat/payrolls/{payroll}', [PerangkatDashboardController::class, 'payrollDetail'])->name('perangkat.payroll-detail');

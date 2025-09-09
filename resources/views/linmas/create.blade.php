@@ -80,19 +80,17 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="pekerjaan">Pekerjaan</label>
-                        <input name="pekerjaan"
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="jabatan">Jabatan</label>
+                        <select name="jabatan"
                             class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
-                            id="pekerjaan" type="text" placeholder="Masukkan pekerjaan"
-                            value="{{ old('pekerjaan') }}" required>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="posisi">Posisi</label>
-                        <input name="posisi"
-                            class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
-                            id="posisi" type="text" placeholder="Masukkan posisi"
-                            value="{{ old('posisi', 'Perangkat Desa') }}">
+                            id="jabatan" required>
+                            <option value="">Pilih Jabatan</option>
+                            @foreach($positions as $position)
+                                <option value="{{ $position }}" {{ old('jabatan') == $position ? 'selected' : '' }}>
+                                    {{ $position }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div class="mb-4">
@@ -103,21 +101,7 @@
                             value="{{ old('tanggal_bergabung', date('Y-m-d')) }}">
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="thn">Tahun</label>
-                        <input name="thn"
-                            class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
-                            id="thn" type="text" placeholder="Masukkan tahun"
-                            value="{{ old('thn') }}">
-                    </div>
 
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="bln">Bulan</label>
-                        <input name="bln"
-                            class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
-                            id="bln" type="text" placeholder="Masukkan bulan"
-                            value="{{ old('bln') }}">
-                    </div>
 
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="kontak">Kontak</label>
@@ -125,6 +109,24 @@
                             class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
                             id="kontak" type="text" placeholder="Masukkan kontak"
                             value="{{ old('kontak') }}">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="status">Status</label>
+                        <select name="status"
+                            class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
+                            id="status">
+                            <option value="aktif" {{ old('status') == 'aktif' ? 'selected' : '' }}>Aktif</option>
+                            <option value="nonaktif" {{ old('status') == 'nonaktif' ? 'selected' : '' }}>Non-Aktif</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="gaji_pokok">Gaji Pokok</label>
+                        <input name="gaji_pokok"
+                            class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300 transition duration-300"
+                            id="gaji_pokok" type="number" placeholder="Masukkan gaji pokok"
+                            value="{{ old('gaji_pokok', 0) }}">
                     </div>
                 </div>
 

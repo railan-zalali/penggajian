@@ -61,9 +61,18 @@ class MonthClosingController extends Controller
         // Parse period into year and month
         list($year, $month) = explode('-', $request->period);
 
-        // Cek apakah bulan sudah ditutup
-        if (MonthClosing::isMonthClosed($year, $month)) {
+        // Check if this period already exists
+        $existing = MonthClosing::where('year', $year)
+            ->where('month', $month)
+            ->first();
+
+        if ($existing && $existing->status === 'closed') {
             return redirect()->back()->with('error', 'Periode ini sudah ditutup sebelumnya.');
+        }
+
+        // If period exists but was reopened, we can close it again
+        if ($existing && $existing->status === 'reopened') {
+            return $this->closeReopenedPeriod($existing, $request);
         }
 
         // Create mutex lock SEBELUM transaksi
@@ -187,6 +196,121 @@ class MonthClosingController extends Controller
     }
 
     /**
+     * Close a previously reopened period
+     */
+    private function closeReopenedPeriod(MonthClosing $monthClosing, Request $request)
+    {
+        $lockFile = storage_path("app/month_closing_{$monthClosing->year}_{$monthClosing->month}.lock");
+        
+        if (file_exists($lockFile)) {
+            $lockTime = file_get_contents($lockFile);
+            $lockAge = time() - strtotime($lockTime);
+
+            if ($lockAge < 1800) {
+                return redirect()->back()->with('error', 'Proses penutupan bulan sedang berjalan. Mohon tunggu beberapa saat.');
+            }
+        }
+
+        file_put_contents($lockFile, Carbon::now()->toDateTimeString());
+
+        try {
+            DB::beginTransaction();
+
+            // Get all payrolls for this period
+            $payrolls = Payroll::whereYear('payroll_date', $monthClosing->year)
+                ->whereMonth('payroll_date', $monthClosing->month)
+                ->get();
+
+            // Validasi status penggajian
+            $pendingPayrolls = $payrolls->where('payment_status', 'pending');
+            $cancelledPayrolls = $payrolls->where('payment_status', 'cancelled');
+            $paidPayrolls = $payrolls->where('payment_status', 'paid');
+            
+            // Jika semua penggajian dibatalkan, tidak bisa tutup bulan
+            if ($paidPayrolls->isEmpty() && $pendingPayrolls->isEmpty()) {
+                if (file_exists($lockFile)) {
+                    @unlink($lockFile);
+                }
+                return redirect()->route('month-closing.create')
+                    ->with('error', "Tidak dapat menutup bulan karena semua penggajian dibatalkan. Harus ada minimal satu penggajian dengan status paid atau pending.")
+                    ->withInput();
+            }
+            
+            // Jika ada penggajian pending dan tidak diabaikan
+            if ($pendingPayrolls->isNotEmpty() && !$request->has('ignore_pending')) {
+                $pendingCount = $pendingPayrolls->count();
+                $totalCount = $payrolls->count();
+
+                if (file_exists($lockFile)) {
+                    @unlink($lockFile);
+                }
+                return redirect()->route('month-closing.create')
+                    ->with('error', "Masih terdapat $pendingCount dari $totalCount gaji dengan status pending. Mohon selesaikan pembayaran terlebih dahulu atau centang 'Abaikan status pending' untuk melanjutkan.")
+                    ->withInput();
+            }
+
+            // Check if there are any cancelled payments and summarize them
+            $cancelledAmount = $cancelledPayrolls->sum('total_salary');
+            $cancelledCount = $cancelledPayrolls->count();
+
+            // Update the existing month closing record
+            $monthClosing->update([
+                'closing_date' => Carbon::now(),
+                'total_linmas' => Linmas::count(),
+                'total_payrolls' => $payrolls->count(),
+                'total_amount' => $payrolls->sum('total_salary'),
+                'closed_by' => Auth::id(),
+                'notes' => $request->notes . ($cancelledCount > 0 ?
+                    " (Terdapat $cancelledCount pembayaran dibatalkan senilai Rp " . number_format($cancelledAmount, 0, ',', '.') . ")" :
+                    ""),
+                'status' => 'closed',
+                'reopened_at' => null,
+                'reopened_by' => null
+            ]);
+
+            // Link all payrolls to this month closing
+            Payroll::whereYear('payroll_date', $monthClosing->year)
+                ->whereMonth('payroll_date', $monthClosing->month)
+                ->update(['month_closing_id' => $monthClosing->id]);
+
+            DB::commit();
+
+            // Remove lock file
+            if (file_exists($lockFile)) {
+                @unlink($lockFile);
+            }
+
+            Log::info('Reopened month closed successfully', [
+                'month_closing_id' => $monthClosing->id,
+                'year' => $monthClosing->year,
+                'month' => $monthClosing->month,
+                'total_payrolls' => $payrolls->count(),
+                'closed_by' => Auth::id()
+            ]);
+
+            return redirect()->route('month-closing.index')
+                ->with('success', 'Periode berhasil ditutup kembali.');
+        } catch (\Exception $e) {
+            DB::rollback();
+            
+            if (file_exists($lockFile)) {
+                @unlink($lockFile);
+            }
+            
+            Log::error('Reopened month closing failed: ' . $e->getMessage(), [
+                'month_closing_id' => $monthClosing->id,
+                'year' => $monthClosing->year,
+                'month' => $monthClosing->month,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('month-closing.create')
+                ->with('error', 'Terjadi kesalahan saat menutup periode: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Display the specified resource.
      */
     public function show(MonthClosing $monthClosing)
@@ -222,7 +346,7 @@ class MonthClosingController extends Controller
             ->orderBy('month', 'desc')
             ->first();
 
-        if ($latestClosing->id !== $monthClosing->id) {
+        if (!$latestClosing || $latestClosing->id !== $monthClosing->id) {
             return redirect()->route('month-closing.index')
                 ->with('error', 'Hanya periode terakhir yang ditutup yang dapat dibuka kembali.');
         }
@@ -230,23 +354,47 @@ class MonthClosingController extends Controller
         // Definisikan lockFile di awal untuk digunakan di catch block jika terjadi error
         $lockFile = storage_path("app/month_closing_{$monthClosing->year}_{$monthClosing->month}.lock");
 
+        // Create mutex lock untuk mencegah proses bersamaan
+        if (file_exists($lockFile)) {
+            $lockTime = file_get_contents($lockFile);
+            $lockAge = time() - strtotime($lockTime);
+
+            // Jika lock berusia > 30 menit, anggap proses sebelumnya gagal
+            if ($lockAge < 1800) {
+                return redirect()->back()->with('error', 'Proses buka bulan sedang berjalan. Mohon tunggu beberapa saat.');
+            }
+        }
+
+        // Buat lock baru
+        file_put_contents($lockFile, Carbon::now()->toDateTimeString());
+
         DB::beginTransaction();
 
         try {
-            // Update status
-            $monthClosing->status = 'reopened';
-            $monthClosing->save();
+            // Update status to reopened
+            $monthClosing->update([
+                'status' => 'reopened',
+                'reopened_at' => Carbon::now(),
+                'reopened_by' => Auth::id()
+            ]);
 
-            // Unlink payrolls
+            // Unlink payrolls from this closing
             Payroll::where('month_closing_id', $monthClosing->id)
                 ->update(['month_closing_id' => null]);
 
             DB::commit();
 
-            // Remove lock file if exists
+            // Remove lock file after success
             if (file_exists($lockFile)) {
                 @unlink($lockFile);
             }
+
+            Log::info('Month reopened successfully', [
+                'month_closing_id' => $monthClosing->id,
+                'year' => $monthClosing->year,
+                'month' => $monthClosing->month,
+                'reopened_by' => Auth::id()
+            ]);
 
             return redirect()->route('month-closing.index')
                 ->with('success', 'Periode ' . $monthClosing->formatted_period . ' berhasil dibuka kembali.');
@@ -259,12 +407,14 @@ class MonthClosingController extends Controller
             }
             
             Log::error('Month reopening failed: ' . $e->getMessage(), [
+                'month_closing_id' => $monthClosing->id,
                 'year' => $monthClosing->year,
                 'month' => $monthClosing->month,
+                'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
             return redirect()->route('month-closing.index')
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+                ->with('error', 'Terjadi kesalahan saat membuka periode: ' . $e->getMessage());
         }
     }
 

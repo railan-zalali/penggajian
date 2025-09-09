@@ -13,7 +13,6 @@ class Payroll extends Model
         'linmas_id',
         'total_days_present',
         'base_salary',
-        'overtime_payment',
         'total_salary',
         'payroll_date',
         'payment_status',

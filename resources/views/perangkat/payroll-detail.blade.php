@@ -67,11 +67,11 @@
                 </div>
 
                 <!-- Detail Perhitungan -->
-                @if($details && $details->count() > 0)
-                    <div class="bg-white rounded-lg shadow-md overflow-hidden mt-6">
-                        <div class="px-6 py-4 bg-green-600 text-white">
-                            <h2 class="text-xl font-semibold">Detail Perhitungan</h2>
-                        </div>
+                <div class="bg-white rounded-lg shadow-md overflow-hidden mt-6">
+                    <div class="px-6 py-4 bg-green-600 text-white">
+                        <h2 class="text-xl font-semibold">Detail Perhitungan</h2>
+                    </div>
+                    @if($details && $details->count() > 0)
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
@@ -120,8 +120,20 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                @endif
+                    @else
+                        <div class="p-6">
+                            <div class="text-center py-8">
+                                <div class="mx-auto h-12 w-12 text-gray-400">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada detail perhitungan</h3>
+                                <p class="mt-1 text-sm text-gray-500">Gaji ini hanya terdiri dari gaji pokok tanpa tunjangan atau potongan tambahan.</p>
+                            </div>
+                        </div>
+                    @endif
+                </div>
             </div>
 
             <!-- Ringkasan -->
@@ -132,28 +144,86 @@
                     </div>
                     <div class="p-6">
                         <div class="space-y-4">
+                            <!-- Gaji Pokok -->
                             <div class="flex justify-between items-center pb-2 border-b">
                                 <span class="text-sm font-medium text-gray-500">Gaji Pokok:</span>
                                 <span class="text-sm text-gray-900">Rp {{ number_format($payroll->base_salary, 0, ',', '.') }}</span>
                             </div>
                             
+                            <!-- Perhitungan Kehadiran -->
+                            @if($payroll->working_days > 0 && $payroll->attendance_days != $payroll->working_days)
+                                <div class="bg-yellow-50 p-3 rounded-lg">
+                                    <div class="flex justify-between items-center text-xs">
+                                        <span class="text-gray-600">Gaji per hari:</span>
+                                        <span class="text-gray-800">Rp {{ number_format($payroll->base_salary / $payroll->working_days, 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center text-xs mt-1">
+                                        <span class="text-gray-600">Potongan absen ({{ $payroll->working_days - $payroll->attendance_days }} hari):</span>
+                                        <span class="text-red-600">-Rp {{ number_format(($payroll->base_salary / $payroll->working_days) * ($payroll->working_days - $payroll->attendance_days), 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center text-sm font-medium mt-2 pt-2 border-t border-yellow-200">
+                                        <span class="text-gray-700">Gaji setelah potongan:</span>
+                                        <span class="text-gray-900">Rp {{ number_format(($payroll->base_salary / $payroll->working_days) * $payroll->attendance_days, 0, ',', '.') }}</span>
+                                    </div>
+                                </div>
+                            @endif
+                            
+                            <!-- Tunjangan -->
                             @if($details && $details->where('component_type', 'allowance')->count() > 0)
-                                <div class="flex justify-between items-center pb-2 border-b">
-                                    <span class="text-sm font-medium text-gray-500">Total Tunjangan:</span>
-                                    <span class="text-sm text-green-600">+Rp {{ number_format($details->where('component_type', 'allowance')->sum('amount'), 0, ',', '.') }}</span>
+                                <div class="bg-green-50 p-3 rounded-lg">
+                                    <h5 class="text-sm font-medium text-green-800 mb-2">Tunjangan</h5>
+                                    @foreach($details->where('component_type', 'allowance') as $allowance)
+                                        <div class="flex justify-between items-center text-xs mb-1">
+                                            <span class="text-green-700">{{ $allowance->component_name }}:</span>
+                                            <span class="text-green-600">+Rp {{ number_format($allowance->amount, 0, ',', '.') }}</span>
+                                        </div>
+                                    @endforeach
+                                    <div class="flex justify-between items-center text-sm font-medium mt-2 pt-2 border-t border-green-200">
+                                        <span class="text-green-800">Total Tunjangan:</span>
+                                        <span class="text-green-600">+Rp {{ number_format($details->where('component_type', 'allowance')->sum('amount'), 0, ',', '.') }}</span>
+                                    </div>
                                 </div>
                             @endif
                             
+                            <!-- Potongan -->
                             @if($details && $details->where('component_type', 'deduction')->count() > 0)
-                                <div class="flex justify-between items-center pb-2 border-b">
-                                    <span class="text-sm font-medium text-gray-500">Total Potongan:</span>
-                                    <span class="text-sm text-red-600">-Rp {{ number_format($details->where('component_type', 'deduction')->sum('amount'), 0, ',', '.') }}</span>
+                                <div class="bg-red-50 p-3 rounded-lg">
+                                    <h5 class="text-sm font-medium text-red-800 mb-2">Potongan</h5>
+                                    @foreach($details->where('component_type', 'deduction') as $deduction)
+                                        <div class="flex justify-between items-center text-xs mb-1">
+                                            <span class="text-red-700">{{ $deduction->component_name }}:</span>
+                                            <span class="text-red-600">-Rp {{ number_format($deduction->amount, 0, ',', '.') }}</span>
+                                        </div>
+                                    @endforeach
+                                    <div class="flex justify-between items-center text-sm font-medium mt-2 pt-2 border-t border-red-200">
+                                        <span class="text-red-800">Total Potongan:</span>
+                                        <span class="text-red-600">-Rp {{ number_format($details->where('component_type', 'deduction')->sum('amount'), 0, ',', '.') }}</span>
+                                    </div>
                                 </div>
                             @endif
                             
-                            <div class="flex justify-between items-center pt-2 border-t-2 border-gray-200">
-                                <span class="text-lg font-bold text-gray-900">Total Gaji:</span>
-                                <span class="text-lg font-bold text-blue-600">Rp {{ number_format($payroll->total_salary, 0, ',', '.') }}</span>
+                            <!-- Perhitungan Akhir -->
+                            <div class="bg-blue-50 p-3 rounded-lg">
+                                @php
+                                    $effectiveBaseSalary = $payroll->working_days > 0 ? ($payroll->base_salary / $payroll->working_days) * $payroll->attendance_days : $payroll->base_salary;
+                                    $totalAllowances = $details ? $details->where('component_type', 'allowance')->sum('amount') : 0;
+                                    $totalDeductions = $details ? $details->where('component_type', 'deduction')->sum('amount') : 0;
+                                    $grossSalary = $effectiveBaseSalary + $totalAllowances;
+                                    $netSalary = $grossSalary - $totalDeductions;
+                                @endphp
+                                
+                                <div class="flex justify-between items-center text-sm mb-1">
+                                    <span class="text-blue-700">Gaji Bruto:</span>
+                                    <span class="text-blue-800">Rp {{ number_format($grossSalary, 0, ',', '.') }}</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm mb-2">
+                                    <span class="text-blue-700">Total Potongan:</span>
+                                    <span class="text-red-600">-Rp {{ number_format($totalDeductions, 0, ',', '.') }}</span>
+                                </div>
+                                <div class="flex justify-between items-center pt-2 border-t-2 border-blue-200">
+                                    <span class="text-lg font-bold text-blue-900">Gaji Bersih:</span>
+                                    <span class="text-lg font-bold text-blue-600">Rp {{ number_format($payroll->total_salary, 0, ',', '.') }}</span>
+                                </div>
                             </div>
                         </div>
                         
@@ -219,6 +289,80 @@
                         </div>
                     </div>
                 @endif
+
+                <!-- Informasi Tambahan -->
+                <div class="bg-white rounded-lg shadow-md overflow-hidden mt-6">
+                    <div class="px-6 py-4 bg-gray-600 text-white">
+                        <h2 class="text-lg font-semibold">Informasi Tambahan</h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Riwayat Pembayaran -->
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-900 mb-3">Riwayat Pembayaran</h4>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-gray-600">Dibuat pada:</span>
+                                        <span class="text-gray-900">{{ $payroll->created_at->format('d/m/Y H:i') }}</span>
+                                    </div>
+                                    @if($payroll->payment_date)
+                                        <div class="flex justify-between items-center text-sm">
+                                            <span class="text-gray-600">Dibayar pada:</span>
+                                            <span class="text-gray-900">{{ $payroll->payment_date->format('d/m/Y H:i') }}</span>
+                                        </div>
+                                    @endif
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-gray-600">Terakhir diupdate:</span>
+                                        <span class="text-gray-900">{{ $payroll->updated_at->format('d/m/Y H:i') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Statistik Gaji -->
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-900 mb-3">Statistik Periode</h4>
+                                <div class="space-y-2">
+                                    @php
+                                        $attendancePercentage = $payroll->working_days > 0 ? ($payroll->attendance_days / $payroll->working_days) * 100 : 0;
+                                    @endphp
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-gray-600">Tingkat Kehadiran:</span>
+                                        <span class="text-gray-900 font-medium
+                                            {{ $attendancePercentage >= 95 ? 'text-green-600' : ($attendancePercentage >= 80 ? 'text-yellow-600' : 'text-red-600') }}">
+                                            {{ number_format($attendancePercentage, 1) }}%
+                                        </span>
+                                    </div>
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-gray-600">Efektivitas Gaji:</span>
+                                        <span class="text-gray-900">{{ number_format(($payroll->total_salary / $payroll->base_salary) * 100, 1) }}%</span>
+                                    </div>
+                                    @if($details && $details->where('component_type', 'allowance')->count() > 0)
+                                        <div class="flex justify-between items-center text-sm">
+                                            <span class="text-gray-600">Bonus Tunjangan:</span>
+                                            <span class="text-green-600">{{ number_format(($details->where('component_type', 'allowance')->sum('amount') / $payroll->base_salary) * 100, 1) }}%</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Catatan -->
+                        @if($payroll->notes || $payroll->payment_status === 'cancelled')
+                            <div class="mt-6 pt-6 border-t border-gray-200">
+                                <h4 class="text-sm font-medium text-gray-900 mb-2">Catatan</h4>
+                                <div class="bg-gray-50 p-3 rounded-lg">
+                                    @if($payroll->notes)
+                                        <p class="text-sm text-gray-700">{{ $payroll->notes }}</p>
+                                    @elseif($payroll->payment_status === 'cancelled')
+                                        <p class="text-sm text-red-600">Pembayaran gaji periode ini telah dibatalkan.</p>
+                                    @else
+                                        <p class="text-sm text-gray-500 italic">Tidak ada catatan khusus.</p>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
     </div>

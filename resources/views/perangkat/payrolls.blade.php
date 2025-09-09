@@ -28,35 +28,132 @@
             </div>
         </div>
 
+        <!-- Filter Section -->
+        <div class="bg-white shadow rounded-lg mb-6">
+            <div class="px-6 py-4">
+                <form method="GET" action="{{ route('perangkat.payrolls') }}" class="flex flex-wrap gap-4 items-end">
+                    <div class="flex-1 min-w-48">
+                        <label for="year" class="block text-sm font-medium text-gray-700 mb-1">Tahun</label>
+                        <select name="year" id="year" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <option value="">Semua Tahun</option>
+                            @for($i = date('Y'); $i >= date('Y') - 5; $i--)
+                                <option value="{{ $i }}" {{ request('year') == $i ? 'selected' : '' }}>{{ $i }}</option>
+                            @endfor
+                        </select>
+                    </div>
+                    <div class="flex-1 min-w-48">
+                        <label for="month" class="block text-sm font-medium text-gray-700 mb-1">Bulan</label>
+                        <select name="month" id="month" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <option value="">Semua Bulan</option>
+                            @for($i = 1; $i <= 12; $i++)
+                                <option value="{{ $i }}" {{ request('month') == $i ? 'selected' : '' }}>{{ DateTime::createFromFormat('!m', $i)->format('F') }}</option>
+                            @endfor
+                        </select>
+                    </div>
+                    <div class="flex-1 min-w-48">
+                        <label for="payment_status" class="block text-sm font-medium text-gray-700 mb-1">Status Pembayaran</label>
+                        <select name="payment_status" id="payment_status" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <option value="">Semua Status</option>
+                            <option value="paid" {{ request('payment_status') == 'paid' ? 'selected' : '' }}>Dibayar</option>
+                            <option value="pending" {{ request('payment_status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                            <option value="cancelled" {{ request('payment_status') == 'cancelled' ? 'selected' : '' }}>Dibatalkan</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            Filter
+                        </button>
+                        @if(request('year') || request('month') || request('payment_status'))
+                            <a href="{{ route('perangkat.payrolls') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                Reset
+                            </a>
+                        @endif
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Statistik Gaji -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
-                <h3 class="text-sm font-medium text-gray-700">Total Gaji Diterima</h3>
-                <p class="text-lg font-bold text-green-600">
-                    Rp {{ number_format($payrolls->where('payment_status', 'paid')->sum('total_salary'), 0, ',', '.') }}
-                </p>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Total Gaji Diterima</dt>
+                                <dd class="text-lg font-medium text-gray-900">Rp {{ number_format($payrolls->where('payment_status', 'paid')->sum('total_salary'), 0, ',', '.') }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
-                <h3 class="text-sm font-medium text-gray-700">Gaji Terakhir</h3>
-                <p class="text-lg font-bold text-blue-600">
-                    @if($payrolls->count() > 0)
-                        Rp {{ number_format($payrolls->first()->total_salary, 0, ',', '.') }}
-                    @else
-                        -
-                    @endif
-                </p>
+
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Gaji Terakhir</dt>
+                                <dd class="text-lg font-medium text-gray-900">
+                                    @if($payrolls->count() > 0)
+                                        Rp {{ number_format($payrolls->first()->total_salary, 0, ',', '.') }}
+                                    @else
+                                        -
+                                    @endif
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-yellow-500">
-                <h3 class="text-sm font-medium text-gray-700">Gaji Pending</h3>
-                <p class="text-lg font-bold text-yellow-600">
-                    {{ $payrolls->where('payment_status', 'pending')->count() }}
-                </p>
+
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Gaji Pending</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ $payrolls->where('payment_status', 'pending')->count() }} periode</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
-                <h3 class="text-sm font-medium text-gray-700">Total Periode</h3>
-                <p class="text-lg font-bold text-purple-600">
-                    {{ $payrolls->count() }}
-                </p>
+
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Total Periode</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ $payrolls->count() }} bulan</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

@@ -62,7 +62,7 @@ class PayrollStorageService
                         'linmas_id' => $linmas->id,
                         'total_days_present' => $data['total_days_worked'] ?? 0,
                         'base_salary' => $data['base_salary'] ?? 0,
-                        'overtime_payment' => $data['overtime_payment'] ?? 0,
+                        // Field overtime_payment sudah dihapus
                         'total_salary' => $data['total_wage'] ?? 0,
                         'payroll_date' => $endDate,
                         'payment_status' => 'pending',
@@ -123,15 +123,7 @@ class PayrollStorageService
                 'amount' => max(0, $data['base_salary'] ?? 0)
             ]);
 
-            // Overtime - pastikan nilai tidak negatif
-            if (($data['overtime_payment'] ?? 0) > 0) {
-                PayrollDetail::create([
-                    'payroll_id' => $payroll->id,
-                    'name' => 'Lembur',
-                    'type' => 'overtime',
-                    'amount' => max(0, $data['overtime_payment'])
-                ]);
-            }
+            // Field overtime sudah dihapus dari sistem
 
             // Allowances
             foreach ($data['allowances'] ?? [] as $allowance) {
