@@ -211,7 +211,7 @@
         <div class="header">
             <div class="logo-container">
                 <!-- Replace with your logo -->
-                <h1>KECAMATAN KIARACONDONG</h1>
+                <h1>KECAMATAN CISEWU</h1>
             </div>
             <h1>SLIP GAJI PERANGKAT DESA</h1>
             <p>Periode: {{ \Carbon\Carbon::parse($startDate)->format('d F Y') }} - {{ \Carbon\Carbon::parse($endDate)->format('d F Y') }}</p>

@@ -80,7 +80,7 @@
 
 <body>
     <div class="header">
-        <h1>LAPORAN PENGGAJIAN LINMAS</h1>
+        <h1>LAPORAN PENGGAJIAN PERANGKAT DESA</h1>
         <p>Periode: {{ $startDate }} - {{ $endDate }}</p>
     </div>
 
