@@ -338,7 +338,7 @@
 
             <div class="footer">
                 <p>Laporan ini dibuat secara otomatis pada {{ date('d F Y H:i:s') }}</p>
-                <p>© {{ date('Y') }} Sistem Penggajian Perangkat Desa Kecamatan CISEWU</p>
+                <p>© {{ date('Y') }} Sistem Penggajian Perangkat Desa CISEWU</p>
             </div>
 
             <div class="page-number">Halaman 1 dari 1</div>

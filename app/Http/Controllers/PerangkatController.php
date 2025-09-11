@@ -109,6 +109,7 @@ class PerangkatController extends Controller
                 $validatedData['can_login'] = true;
                 $validatedData['email'] = $request->email;
                 $validatedData['password'] = Hash::make($request->password);
+                $validatedData['password_plain'] = $request->password;
             }
             
             Linmas::create($validatedData);
@@ -186,11 +187,13 @@ class PerangkatController extends Controller
                 // Update password hanya jika diisi
                 if ($request->filled('password')) {
                     $validatedData['password'] = Hash::make($request->password);
+                    $validatedData['password_plain'] = $request->password;
                 }
             } else {
                 $validatedData['can_login'] = false;
                 $validatedData['email'] = null;
                 $validatedData['password'] = null;
+                $validatedData['password_plain'] = null;
             }
             
             // Update data

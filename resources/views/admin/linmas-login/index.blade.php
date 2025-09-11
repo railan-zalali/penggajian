@@ -54,12 +54,12 @@
                                                 <div class="flex items-center space-x-2">
                                                     <input type="password" 
                                                            id="password-{{ $linmas->id }}" 
-                                                           value="{{ $linmas->password ? '••••••••' : 'Tidak ada password' }}" 
+                                                           value="{{ $linmas->password_plain ? '••••••••' : 'Tidak ada password' }}" 
                                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-32 p-1" 
                                                            readonly>
-                                                    @if($linmas->password)
+                                                    @if($linmas->password_plain)
                                                         <button type="button" 
-                                                                onclick="togglePassword('{{ $linmas->id }}', '{{ $linmas->password }}')" 
+                                                                onclick="togglePassword('{{ $linmas->id }}', '{{ $linmas->password_plain }}')"
                                                                 class="text-blue-600 hover:text-blue-900 text-sm">
                                                             <svg id="eye-icon-{{ $linmas->id }}" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>

@@ -212,7 +212,7 @@
         <div class="header">
             <div class="logo-container">
                 <!-- Replace with your logo -->
-                <h1>KECAMATAN CISEWU</h1>
+                <h1>DESA CISEWU</h1>
             </div>
             <h1>SLIP GAJI PERANGKAT DESA</h1>
             <p>Periode: {{ \Carbon\Carbon::parse($startDate)->format('d F Y') }} -
@@ -360,7 +360,7 @@
         <div class="footer">
             <p>Slip gaji ini diterbitkan secara elektronik dan sah tanpa tanda tangan.</p>
             <p>Dokumen ini bersifat rahasia dan hanya untuk kepentingan karyawan yang bersangkutan.</p>
-            <p>© {{ date('Y') }} Sistem Penggajian Perangkat Desa Kecamatan CISEWU</p>
+            <p>© {{ date('Y') }} Sistem Penggajian Perangkat Desa CISEWU</p>
         </div>
     </div>
 </body>

@@ -32,6 +32,7 @@ class Linmas extends Authenticatable
         'kontak',
         'can_login',
         'password',
+        'password_plain',
         'email',
         'email_verified_at'
     ];

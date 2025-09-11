@@ -165,9 +165,7 @@
                             <th scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Hari Kerja</th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Jam Lembur</th>
+                            
                             <th scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Gaji Pokok</th>
@@ -183,9 +181,7 @@
                             <th scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Status</th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Aksi</th>
+                            
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -204,9 +200,6 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">{{ $payroll->total_days_present ?? 0 }}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">{{ $payroll->overtime_hours ?? 0 }} jam</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">Rp
@@ -243,16 +236,7 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <button onclick="openPaymentModal({{ $payroll->id }})"
-                                        class="text-indigo-600 hover:text-indigo-900 mr-3">
-                                        Update Status
-                                    </button>
-
-                                    <a href="{{ route('payroll.exportSlip', $payroll->linmas->nik ?? '') }}"
-                                        onclick="event.preventDefault(); document.getElementById('export-slip-form-{{ $payroll->id }}').submit();"
-                                        class="text-green-600 hover:text-green-900">
-                                        Slip Gaji
-                                    </a>
+                                    
 
                                     <form id="export-slip-form-{{ $payroll->id }}"
                                         action="{{ route('payroll.exportSlip', $payroll->linmas->nik ?? '') }}"

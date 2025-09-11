@@ -151,29 +151,44 @@
         }
 
         .signature-area {
-            margin-top: 40px;
+            margin-top: 50px;
             display: flex;
             justify-content: space-between;
             width: 100%;
+            padding: 0 20px;
+            align-items: flex-start; /* Pastikan semua elemen sejajar dari atas */
         }
 
         .signature-box {
             width: 45%;
             position: relative;
-        }
-        
-        .signature-box:first-child {
-            text-align: left;
-        }
-        
-        .signature-box:last-child {
-            text-align: right;
+            display: inline-block;
+            vertical-align: top; /* Pastikan sejajar dari atas */
+            text-align: center;
         }
 
         .signature-line {
-            border-top: 1px solid #ddd;
-            margin: 50px auto 10px;
+            border-top: 2px solid #333;
+            margin: 60px auto 15px auto;
             width: 80%;
+        }
+
+        .signature-name {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .signature-title {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .signature-date {
+            font-size: 11px;
+            color: #888;
+            margin-top: 8px;
         }
 
         .page-number {
@@ -296,12 +311,14 @@
             <span>Rp {{ number_format($monthClosing->total_amount, 0, ',', '.') }}</span>
         </div>
     </div>
+    
 
     <div class="signature-area">
         <div class="signature-box">
             <div class="signature-line"></div>
-            <strong>Dibuat oleh,</strong><br>
-            {{ $monthClosing->user->name }}<br>
+            <strong>Dibuat oleh,
+                {{ $monthClosing->user->name }}<br>
+            </strong><br>
             Admin Penggajian
         </div>
         <div class="signature-box">

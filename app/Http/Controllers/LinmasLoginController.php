@@ -53,6 +53,7 @@ class LinmasLoginController extends Controller
         $linmas->update([
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'password_plain' => $request->password,
             'can_login' => true,
         ]);
 
@@ -89,6 +90,7 @@ class LinmasLoginController extends Controller
         
         if ($request->filled('password')) {
             $updateData['password'] = Hash::make($request->password);
+            $updateData['password_plain'] = $request->password;
         }
 
         $linmas->update($updateData);
@@ -105,6 +107,7 @@ class LinmasLoginController extends Controller
         $linmas->update([
             'email' => null,
             'password' => null,
+            'password_plain' => null,
             'can_login' => false,
         ]);
 
@@ -144,7 +147,8 @@ class LinmasLoginController extends Controller
         
         // Update password
         $linmas->update([
-            'password' => Hash::make($newPassword)
+            'password' => Hash::make($newPassword),
+            'password_plain' => $newPassword
         ]);
 
         return response()->json([
