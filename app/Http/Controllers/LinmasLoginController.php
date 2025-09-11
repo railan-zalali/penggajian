@@ -6,6 +6,7 @@ use App\Models\Linmas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
+use Illuminate\Support\Str;
 
 class LinmasLoginController extends Controller
 {
@@ -124,5 +125,32 @@ class LinmasLoginController extends Controller
         
         return redirect()->route('admin.linmas-login.index')
             ->with('success', 'Akses login ' . $linmas->nama . ' berhasil ' . $status);
+    }
+
+    /**
+     * Generate new password for linmas.
+     */
+    public function generatePassword(Linmas $linmas)
+    {
+        if (!$linmas->can_login) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Linmas ini tidak memiliki akses login.'
+            ]);
+        }
+
+        // Generate random password
+        $newPassword = Str::random(8);
+        
+        // Update password
+        $linmas->update([
+            'password' => Hash::make($newPassword)
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'password' => $newPassword,
+            'message' => 'Password baru berhasil di-generate untuk ' . $linmas->nama
+        ]);
     }
 }

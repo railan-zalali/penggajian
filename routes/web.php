@@ -153,6 +153,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::put('/update/{linmas}', [LinmasLoginController::class, 'update'])->name('update');
         Route::delete('/destroy/{linmas}', [LinmasLoginController::class, 'destroy'])->name('destroy');
         Route::patch('/toggle/{linmas}', [LinmasLoginController::class, 'toggle'])->name('toggle');
+        Route::post('/generate-password/{linmas}', [LinmasLoginController::class, 'generatePassword'])->name('generate-password');
     });
 });
 
