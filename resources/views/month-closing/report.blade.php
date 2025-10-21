@@ -19,6 +19,51 @@
             line-height: 1.5;
         }
 
+        .kop-surat {
+            text-align: center;
+            padding: 10px 0;
+            border-bottom: 2px solid #000;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kop-logo {
+            width: 80px;
+            height: auto;
+            margin-right: 15px;
+        }
+
+        .kop-text {
+            text-align: center;
+        }
+
+        .kop-text h1, .kop-text h2, .kop-text h3 {
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .kop-text h1 {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .kop-text h2 {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .kop-text h3 {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .kop-text p {
+            margin: 5px 0 0;
+            font-size: 10px;
+        }
+
         .header {
             text-align: center;
             margin-bottom: 30px;
@@ -201,6 +246,16 @@
 </head>
 
 <body>
+    <div class="kop-surat">
+        <img src="{{ public_path('images/logo.png') }}" alt="Logo Desa Cisewu" class="kop-logo">
+        <div class="kop-text">
+            <h1>PEMERINTAH KABUPATEN GARUT</h1>
+            <h2>KECAMATAN CISEWU</h2>
+            <h3>DESA CISEWU</h3>
+            <p>Alamat: Jalan Wirabhakti Nomor 26 C Cisewu - Garut 44166</p>
+            <p>email: desacisewu1@gmail.com</p>
+        </div>
+    </div>
     <div class="header">
         <h1>Laporan Tutup Bulan</h1>
         <p>Periode: {{ $monthClosing->formatted_period }}</p>

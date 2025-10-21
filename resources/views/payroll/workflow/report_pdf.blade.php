@@ -10,6 +10,41 @@
             line-height: 1.5;
             color: #333;
         }
+        .kop-surat {
+            text-align: center;
+            padding: 10px 20px;
+            border-bottom: 2px solid #000;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        .kop-logo {
+            width: 80px;
+            height: auto;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .kop-text {
+            text-align: center;
+            flex: 1;
+        }
+        .kop-text h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .kop-text p {
+            margin: 2px 0;
+            font-size: 12px;
+        }
+        .kop-divider {
+            border: 1px solid #000;
+            margin-bottom: 20px;
+        }
         .header {
             text-align: center;
             margin-bottom: 20px;
@@ -82,8 +117,22 @@
     </style>
 </head>
 <body>
+    <div class="kop-surat">
+        <div class="kop-logo">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo Desa Cisewu" width="80">
+        </div>
+        <div class="kop-text">
+            <h2>PEMERINTAH KABUPATEN GARUT</h2>
+            <h2>KECAMATAN CISEWU</h2>
+            <h2>DESA CISEWU</h2>
+            <p>Alamat: Jalan Wirabhakti Nomor 26 C Cisewu - Garut 44166</p>
+            <p>Email: desacisewu1@gmail.com</p>
+        </div>
+    </div>
+    <hr class="kop-divider">
+    
     <div class="header">
-        <h1>Laporan Status Alur Proses Penggajian</h1>
+        <h1>LAPORAN STATUS ALUR PROSES PENGGAJIAN</h1>
         @if($month && $year)
             <p>Periode: {{ \Carbon\Carbon::create(null, $month, 1)->format('F') }} {{ $year }}</p>
         @elseif($year)
