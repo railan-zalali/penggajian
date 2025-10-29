@@ -359,21 +359,14 @@
     </div>
     
 
-    <div class="signature-area">
-        <div class="signature-box">
-            <div class="signature-line"></div>
-            <strong>Dibuat oleh,
-                {{ $monthClosing->user->name }}<br>
-            </strong><br>
-            Admin Penggajian
-        </div>
-        <div class="signature-box">
-            <div class="signature-line"></div>
-            <strong>Disetujui oleh,</strong><br>
-            _______________________<br>
-            Kepala Desa
-        </div>
-    </div>
+    @include('components.signature-row', [
+        'leftTitle' => 'Dibuat oleh,',
+        'leftLabel1' => 'Admin Penggajian',
+        'leftName' => $monthClosing->user->name ?? null,
+        'rightTitle' => 'Disetujui oleh,',
+        'rightLabel1' => null,
+        'rightName' => config('app.village_head', 'Kepala Desa')
+    ])
 
     <div class="footer">
         <p>Laporan ini dibuat secara otomatis dari Sistem Penggajian Perangkat Desa.</p>

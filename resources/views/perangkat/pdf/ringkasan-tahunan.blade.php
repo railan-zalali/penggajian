@@ -118,9 +118,10 @@
 </head>
 <body>
     <div class="container">
+        @include('components.header-kop-surat')
+        
         <div class="header">
             <h1>Ringkasan Tahunan Penggajian</h1>
-            <h2>Desa {{ config('app.village_name', 'Desa') }}</h2>
             <p>Tahun: {{ $tahun }}</p>
         </div>
         

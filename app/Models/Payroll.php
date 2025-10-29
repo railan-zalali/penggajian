@@ -25,7 +25,10 @@ class Payroll extends Model
         'verified_by',
         'approved_by',
         'verified_at',
-        'approved_at'
+        'approved_at',
+        'payment_confirmed',
+        'payment_confirmed_at',
+        'payment_confirmation_note'
     ];
 
     protected $casts = [
@@ -33,6 +36,8 @@ class Payroll extends Model
         'payment_date' => 'datetime',
         'verified_at' => 'datetime',
         'approved_at' => 'datetime',
+        'payment_confirmed_at' => 'datetime',
+        'payment_confirmed' => 'boolean',
     ];
 
     public function linmas()

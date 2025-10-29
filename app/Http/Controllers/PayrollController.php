@@ -102,10 +102,17 @@ class PayrollController extends Controller
             try {
                 $startDate = \Carbon\Carbon::parse($startMonth)->format('F Y');
                 $endDate = \Carbon\Carbon::parse($endMonth)->format('F Y');
+                
+                // Extract month and year for PDF template
+                $startCarbon = \Carbon\Carbon::parse($startMonth);
+                $month = $startCarbon->format('F');
+                $year = $startCarbon->format('Y');
             } catch (\Exception $e) {
                 Log::warning('Error parsing date format: ' . $e->getMessage());
                 $startDate = $startMonth;
                 $endDate = $endMonth;
+                $month = 'Unknown';
+                $year = 'Unknown';
             }
 
             // Log untuk debugging
@@ -120,6 +127,8 @@ class PayrollController extends Controller
                 'payrollData' => $payrollData,
                 'startDate' => $startDate,
                 'endDate' => $endDate,
+                'month' => $month,
+                'year' => $year,
             ]);
 
             // Set paper size to A4 landscape

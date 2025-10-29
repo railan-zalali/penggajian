@@ -122,9 +122,10 @@
 </head>
 <body>
     <div class="slip-container">
+        @include('components.header-kop-surat')
+        
         <div class="slip-header">
             <h1>Slip Gaji Perangkat Desa</h1>
-            <h2>Desa {{ config('app.village_name', 'Desa') }}</h2>
             <p>Periode: {{ $payroll->payroll_date->format('F Y') }}</p>
         </div>
         

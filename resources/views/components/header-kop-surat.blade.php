@@ -1,13 +1,23 @@
 <div class="kop-surat">
     @php
-        $logoPath = public_path('images/logo.png');
-        $logoSrc = asset('images/logo.png');
-        if (file_exists($logoPath)) {
-            $mime = function_exists('mime_content_type') ? mime_content_type($logoPath) : 'image/png';
-            $logoSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+        $logoSrc = '';
+        $candidatePaths = [
+            public_path('images/logo.png'),
+            storage_path('app/public/images/logo.png'),
+        ];
+
+        foreach ($candidatePaths as $path) {
+            if (file_exists($path)) {
+                $mime = mime_content_type($path) ?: 'image/png';
+                $logoSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($path));
+                break;
+            }
         }
     @endphp
-    <img src="{{ $logoSrc }}" alt="Logo Garut" class="kop-logo">
+
+    @if ($logoSrc)
+        <img src="{{ $logoSrc }}" alt="Logo Garut" class="kop-logo">
+    @endif
     <h2>PEMERINTAH KABUPATEN GARUT</h2>
     <h3>KECAMATAN CISEWU</h3>
     <h3>DESA CISEWU</h3>
@@ -27,6 +37,7 @@
         margin-bottom: 15px;
         font-family: "Times New Roman", serif;
     }
+
     .kop-surat img.kop-logo {
         position: absolute;
         left: 50px;
@@ -34,20 +45,27 @@
         width: 70px;
         height: auto;
     }
-    .kop-surat h2, .kop-surat h3, .kop-surat h4 {
+
+    .kop-surat h2,
+    .kop-surat h3,
+    .kop-surat h4 {
         margin: 0;
         line-height: 1.4;
     }
+
     .kop-surat h2 {
         font-size: 18pt;
     }
+
     .kop-surat h3 {
         font-size: 14pt;
     }
+
     .kop-surat h4 {
         font-size: 12pt;
         font-weight: normal;
     }
+
     .alamat {
         font-size: 10pt;
         margin-top: 5px;

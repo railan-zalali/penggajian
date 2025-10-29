@@ -385,8 +385,8 @@
                 'rightTitle' => 'Pejabat Berwenang',
                 'rightLabel1' => 'Jabatan',
                 'rightName' => 'Kepala Desa',
-                'paid' => (isset($payrollData['payment_status']) && $payrollData['payment_status'] === 'paid'),
-                'paidDate' => ($payrollData['payment_date'] ?? null)
+                'paid' => isset($payrollData['payment_status']) && $payrollData['payment_status'] === 'paid',
+                'paidDate' => $payrollData['payment_date'] ?? null,
             ])
         </div>
 
