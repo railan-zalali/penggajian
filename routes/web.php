@@ -177,6 +177,8 @@ Route::middleware('auth:perangkat')->group(function () {
     Route::get('/perangkat/attendances', [PerangkatDashboardController::class, 'attendances'])->name('perangkat.attendances');
     Route::get('/perangkat/payrolls', [PerangkatDashboardController::class, 'payrolls'])->name('perangkat.payrolls');
     Route::get('/perangkat/payrolls/{payroll}', [PerangkatDashboardController::class, 'payrollDetail'])->name('perangkat.payroll-detail');
+    Route::post('/perangkat/payrolls/{payroll}/confirm-payment', [PerangkatDashboardController::class, 'confirmPayment'])
+        ->name('perangkat.payroll.confirm');
     Route::get('/perangkat/month-closing', [PerangkatDashboardController::class, 'monthClosing'])->name('perangkat.month-closing');
 });
 

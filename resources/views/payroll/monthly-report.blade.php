@@ -314,16 +314,7 @@
     <div class="watermark">CISEWU</div>
 
     <div class="container">
-        <div class="kop-surat">
-            <img src="{{ public_path('images/logo.png') }}" alt="Logo Desa Cisewu" class="kop-logo">
-            <div class="kop-text">
-                <h1>PEMERINTAH KABUPATEN GARUT</h1>
-                <h2>KECAMATAN CISEWU</h2>
-                <h3>DESA CISEWU</h3>
-                <p>Alamat: Jalan Wirabhakti Nomor 26 C Cisewu - Garut 44166</p>
-                <p>email: desacisewu1@gmail.com</p>
-            </div>
-        </div>
+        @include('components.header-kop-surat')
         <div class="header">
             <h1>LAPORAN PENGGAJIAN PERANGKAT DESA</h1>
             <p>Periode: {{ $monthName }} {{ $year }}</p>

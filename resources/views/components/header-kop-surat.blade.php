@@ -1,57 +1,55 @@
 <div class="kop-surat">
-    <div class="kop-logo">
-        <img src="{{ asset('images/logo.png') }}" alt="Logo Desa Cisewu" width="80">
+    @php
+        $logoPath = public_path('images/logo.png');
+        $logoSrc = asset('images/logo.png');
+        if (file_exists($logoPath)) {
+            $mime = function_exists('mime_content_type') ? mime_content_type($logoPath) : 'image/png';
+            $logoSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+        }
+    @endphp
+    <img src="{{ $logoSrc }}" alt="Logo Garut" class="kop-logo">
+    <h2>PEMERINTAH KABUPATEN GARUT</h2>
+    <h3>KECAMATAN CISEWU</h3>
+    <h3>DESA CISEWU</h3>
+    <div class="alamat">
+        Alamat: Jalan Wirabuana Nomor 30 C Cisewu - Garut 44166 <br>
+        Email: desa.cisewu@gmail.com
     </div>
-    <div class="kop-text">
-        <h2>PEMERINTAH KABUPATEN GARUT</h2>
-        <h2>KECAMATAN CISEWU</h2>
-        <h2>DESA CISEWU</h2>
-        <p>Alamat: Jalan Wirabhakti Nomor 26 C Cisewu - Garut 44166</p>
-        <p>Email: desacisewu1@gmail.com</p>
-    </div>
+    <div style="clear: both;"></div>
 </div>
-<hr class="kop-divider">
 
 <style>
     .kop-surat {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: flex-start;
-        margin-bottom: 10px;
-        width: 100%;
-    }
-    .kop-logo {
-        margin-right: 20px;
-        display: flex;
-        align-items: center;
-    }
-    .kop-text {
         text-align: center;
-        flex: 1;
+        border-bottom: 3px solid black;
+        padding-bottom: 10px;
+        position: relative;
+        margin-bottom: 15px;
+        font-family: "Times New Roman", serif;
     }
-    .kop-text h2 {
+    .kop-surat img.kop-logo {
+        position: absolute;
+        left: 50px;
+        top: 10px;
+        width: 70px;
+        height: auto;
+    }
+    .kop-surat h2, .kop-surat h3, .kop-surat h4 {
         margin: 0;
-        font-size: 16px;
-        font-weight: bold;
-        text-transform: uppercase;
+        line-height: 1.4;
     }
-    .kop-text p {
-        margin: 2px 0;
-        font-size: 12px;
+    .kop-surat h2 {
+        font-size: 18pt;
     }
-    .kop-divider {
-        border: 1px solid #000;
-        margin-bottom: 20px;
+    .kop-surat h3 {
+        font-size: 14pt;
     }
-    @media print {
-        .kop-surat {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .kop-logo img {
-            width: 80px;
-        }
+    .kop-surat h4 {
+        font-size: 12pt;
+        font-weight: normal;
+    }
+    .alamat {
+        font-size: 10pt;
+        margin-top: 5px;
     }
 </style>

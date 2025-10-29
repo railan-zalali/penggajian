@@ -237,6 +237,28 @@
                                         </svg>
                                         Dibayar
                                     </span>
+                                    <div class="mt-3">
+                                        @if($payroll->payment_confirmed)
+                                            <div class="flex items-center text-sm text-green-700">
+                                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                Pembayaran telah dikonfirmasi pada {{ optional($payroll->payment_confirmed_at)->format('d M Y H:i') }}.
+                                            </div>
+                                            @if($payroll->payment_confirmation_note)
+                                                <p class="mt-1 text-xs text-gray-600">Catatan: {{ $payroll->payment_confirmation_note }}</p>
+                                            @endif
+                                        @else
+                                            <form method="POST" action="{{ route('perangkat.payroll.confirm', $payroll) }}" class="space-y-2">
+                                                @csrf
+                                                <label class="block text-xs text-gray-700" for="note">Catatan (opsional)</label>
+                                                <textarea name="note" id="note" rows="2" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="Contoh: sudah diterima tunai"></textarea>
+                                                <button type="submit" class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                                    Konfirmasi Penerimaan
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 @elseif($payroll->payment_status == 'pending')
                                     <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
                                         <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">

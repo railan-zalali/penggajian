@@ -214,6 +214,14 @@
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                                 Dibayar
                                             </span>
+                                            @if(!$payroll->payment_confirmed)
+                                                <form method="POST" action="{{ route('perangkat.payroll.confirm', $payroll) }}" class="inline-block ml-2">
+                                                    @csrf
+                                                    <button type="submit" class="text-green-700 hover:text-green-900 text-xs underline">Konfirmasi</button>
+                                                </form>
+                                            @else
+                                                <span class="ml-2 text-xs text-green-700">Sudah dikonfirmasi</span>
+                                            @endif
                                         @elseif($payroll->payment_status == 'pending')
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
                                                 Pending

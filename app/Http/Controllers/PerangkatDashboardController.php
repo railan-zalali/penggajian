@@ -125,6 +125,43 @@ class PerangkatDashboardController extends Controller
         return view('perangkat.payroll-detail', compact('payroll', 'details'));
     }
 
+    /**
+     * Konfirmasi penerimaan pembayaran oleh perangkat desa
+     */
+    public function confirmPayment(Request $request, Payroll $payroll)
+    {
+        $linmas = Auth::guard('perangkat')->user();
+
+        // Pastikan payroll milik perangkat yang login
+        if ($payroll->linmas_id !== $linmas->id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Hanya bisa konfirmasi jika status pembayaran sudah paid
+        if ($payroll->payment_status !== 'paid') {
+            return redirect()->route('perangkat.payroll-detail', $payroll)
+                ->with('error', 'Konfirmasi hanya dapat dilakukan untuk pembayaran yang sudah Dibayar.');
+        }
+
+        // Jika sudah dikonfirmasi, hindari duplikasi
+        if ($payroll->payment_confirmed) {
+            return redirect()->route('perangkat.payroll-detail', $payroll)
+                ->with('info', 'Pembayaran sudah dikonfirmasi sebelumnya.');
+        }
+
+        $request->validate([
+            'note' => 'nullable|string|max:500',
+        ]);
+
+        $payroll->payment_confirmed = true;
+        $payroll->payment_confirmed_at = now();
+        $payroll->payment_confirmation_note = $request->note;
+        $payroll->save();
+
+        return redirect()->route('perangkat.payroll-detail', $payroll)
+            ->with('success', 'Terima kasih, konfirmasi penerimaan pembayaran berhasil dikirim.');
+    }
+
     public function monthClosing()
     {
         $linmas = Auth::guard('perangkat')->user();
